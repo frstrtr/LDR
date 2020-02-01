@@ -27,3 +27,7 @@ up to 1.000.000.000 EUR	0.04%	0.06%
 up to 10.000.000.000 EUR	0.03%	0.05%
 up to 100.000.000.000 EUR	0.02%	0.04%
 over 100.000.000.000 EUR	0.01%	0.03%
+
+1. Calculate total trades amount
+2. Calculate current fee
+3. Calculate minimal order
