@@ -75,6 +75,7 @@ case of no BTC in pair???
 3. Calculate minimal order
 4. Get closing SELL/BUY orders spread
 5. Manual minimal trade shift using API
+  5.1 Get all my open orders
 6. Robot pressure
 
 x. WebSocket subscription
