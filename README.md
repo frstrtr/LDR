@@ -73,4 +73,9 @@ case of no BTC in pair???
 1. Calculate total trades amount
 2. Calculate current fee
 3. Calculate minimal order
+4. Get closing SELL/BUY orders spread
+5. Manual minimal trade shift using API
+6. Robot pressure
+
+x. WebSocket subscription
 
