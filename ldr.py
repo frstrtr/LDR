@@ -8,32 +8,11 @@ from os import system, name
 
 # import sleep to show output for some time period
 from time import sleep
+import keys
 
 BTCpairFlag = False  # Pair Flag for BTC is sec = False, pri = True
 MIN_BTC_TRADE = 0.0001  # minimal BTC trade size
 current_market = 12  # ETHBTC by default
-
-# For testing purposes use api-test.nicehash.com. Register here: https://test.nicehash.com
-# When ready, uncomment line bellow, to run your script on production environment
-# host = 'https://api2.nicehash.com'
-# How to create key, secret and where to get organisation id please check:
-# Production - https://www.nicehash.com
-host = 'https://api2.nicehash.com'
-# organisation_id = 'Enter your organisation id'
-organisation_id = 'b1089b2a-e0e1-4b4b-a697-d964685b26f3'
-# key = 'Enter your api key'
-key = '3e330cc8-6243-4f92-b9c2-3f8c0b3b6625'
-# secret = 'Enter your secret for api key'
-secret = 'fd894d80-664c-4d5b-a3f2-001812f866992645febe-41f4-4ab7-b3d8-2c74cbf3257e'
-
-# # # Test - https://test.nicehash.com
-# host = 'https://api-test.nicehash.com'
-# # organisation_id = '286fcf65-d44e-4cdf-81f2-4790c0cbed04'
-# organisation_id = 'cdce8059-ab50-49b2-a66c-f1862ac4e8db' # plex256
-# # key = '6b957253-bcb9-4b83-b431-4f28ab783a6f'
-# key = '5ec54745-1005-4296-a833-e701b6ffc22b' # plex256
-# # secret = 'ac09da0c-0b41-49ba-be6f-4698f9c184a67c6a834f-5bfe-5389-ba6f-d9ada9a86c03'
-# secret = '70b1a01b-97fa-417b-9dc9-349524ef642b551e8c82-c73d-4c26-be06-f9304b4169ba' # plex256
 
 # Create public api object
 public_api = nicehash.public_api(host, False)
