@@ -77,6 +77,8 @@ case of no BTC in pair???
 5. Manual minimal trade shift using API
   5.1 Get all my open orders
   5.2 List more than 1 last trade
+  5.3 Refresh shift price function
+  5.4 Mark my orders with my trade size in my order book
 6. Robot pressure
 7. 
 
