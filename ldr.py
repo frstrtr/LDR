@@ -1,147 +1,200 @@
 import nicehash
 import json
+from bcolors import bcolors as bc
+#from tabulate import tabulate
 
-# import only system from os 
-from os import system, name 
-  
-# import sleep to show output for some time period 
-from time import sleep 
+# import only system from os
+from os import system, name
 
-BTCpairFlag = False # Pair Flag for BTC is sec = False, pri = True
-MIN_BTC_TRADE = 0.0001# minimal BTC trade size
+# import sleep to show output for some time period
+from time import sleep
 
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[32m'
-    WARNING = '\033[31m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-    DARKGREY = "\033[90m"
-
-# define our clear function 
-def clear(): 
-  
-    # for windows 
-    if name == 'nt': 
-        _ = system('cls') 
-  
-    # for mac and linux(here, os.name is 'posix') 
-    else: 
-        _ = system('clear') 
-
-#clear screen
-clear()
+BTCpairFlag = False  # Pair Flag for BTC is sec = False, pri = True
+MIN_BTC_TRADE = 0.0001  # minimal BTC trade size
+current_market = 12  # ETHBTC by default
 
 # For testing purposes use api-test.nicehash.com. Register here: https://test.nicehash.com
 # When ready, uncomment line bellow, to run your script on production environment
 # host = 'https://api2.nicehash.com'
 # How to create key, secret and where to get organisation id please check:
 # Production - https://www.nicehash.com
+host = 'https://api2.nicehash.com'
 # organisation_id = 'Enter your organisation id'
+organisation_id = 'b1089b2a-e0e1-4b4b-a697-d964685b26f3'
 # key = 'Enter your api key'
+key = '3e330cc8-6243-4f92-b9c2-3f8c0b3b6625'
 # secret = 'Enter your secret for api key'
-
+secret = 'fd894d80-664c-4d5b-a3f2-001812f866992645febe-41f4-4ab7-b3d8-2c74cbf3257e'
 
 # # # Test - https://test.nicehash.com
-host = 'https://api-test.nicehash.com'
+# host = 'https://api-test.nicehash.com'
 # # organisation_id = '286fcf65-d44e-4cdf-81f2-4790c0cbed04'
-organisation_id = 'cdce8059-ab50-49b2-a66c-f1862ac4e8db'
+# organisation_id = 'cdce8059-ab50-49b2-a66c-f1862ac4e8db' # plex256
 # # key = '6b957253-bcb9-4b83-b431-4f28ab783a6f'
-key = '5ec54745-1005-4296-a833-e701b6ffc22b'
+# key = '5ec54745-1005-4296-a833-e701b6ffc22b' # plex256
 # # secret = 'ac09da0c-0b41-49ba-be6f-4698f9c184a67c6a834f-5bfe-5389-ba6f-d9ada9a86c03'
-secret = '70b1a01b-97fa-417b-9dc9-349524ef642b551e8c82-c73d-4c26-be06-f9304b4169ba'
+# secret = '70b1a01b-97fa-417b-9dc9-349524ef642b551e8c82-c73d-4c26-be06-f9304b4169ba' # plex256
 
 # Create public api object
-public_api = nicehash.public_api(host, True)
-
-# Get all markets
-markets = public_api.get_markets()
-# print(markets)
-
-# Get all curencies
-currencies = public_api.get_curencies()
-#currencies = ['BTC','ETH','BCH','LTC','USDT']
-#print(currencies)
+public_api = nicehash.public_api(host, False)
 
 # Create private api object
-private_api = nicehash.private_api(host, organisation_id, key, secret, True)
+private_api = nicehash.private_api(host, organisation_id, key, secret, False)
 
-# Get balance for all currencies
-my_accounts = private_api.get_accounts()
-# print('\nMy accounts:')
-# print(my_accounts)
-# print ('\n')
 
-# Get balance for BTC address
-print('\nGet balance for BTC address:')
-my_btc_account = private_api.get_accounts_for_currency(currencies['currencies'][0]['symbol'])
-#my_btc_account = private_api.get_accounts_for_currency('BTC')
-#print(my_btc_account)
-#print('\n')
+def clear():
+    '''define our clear console function'''
 
-### EXCHANGE DATA
+    # for windows
+    if name == 'nt':
+        _ = system('cls')
+
+    # for mac and linux(here, os.name is 'posix')
+    else:
+        _ = system('clear')
+
+
+def get_symbol_list():
+    ''' Get all curencies symbols as list'''
+    currencies = public_api.get_curencies()
+    currencies_list = list(currencies['currencies'])
+    symbol_list = list()
+    for i in currencies_list:
+        symbol_list.append(i['symbol'])
+    # print (symbol_list) # ['BTC','ETH',etc...]
+    return symbol_list
+
+
+def get_market_list():
+    '''Get all markets symbols as list'''
+    markets = public_api.get_exchange_markets_info()
+    market_list = markets['symbols']
+    return market_list
+
+
+def list_non_zero_balances():
+    ''' Get balance for all currencies with funds'''
+    currencies = public_api.get_curencies()
+    my_accounts = private_api.get_accounts()
+    # print('\nMy accounts:')
+    # print(my_accounts)
+    # print ('\n')
+
+    # Get balance for address with non-zero balance
+    for accounts in currencies['currencies']:
+
+        if private_api.get_accounts_for_currency(accounts['symbol'])['balance'] != '0':
+            my_coin_balance = private_api.get_accounts_for_currency(accounts['symbol'])[
+                'balance']
+            print('My ', accounts['symbol'],
+                  ' balance:', my_coin_balance, '\n')
+
+
+def coin_select():
+    '''Scan all available coins and choose one
+    returns coin indexed list'''
+    current_coin_list = get_symbol_list()
+    counter = 0
+    for i in current_coin_list:
+        print(counter, i)
+        counter += 1
+    selected_coin = input('Select Coin to manipulate:')
+    return selected_coin
+
+
+def market_select():
+    '''Scan all available markets and choose one
+    returns market indexed list'''
+    # Get all markets
+    current_market_list = get_market_list()
+    counter = 0
+    for i in current_market_list:
+        print(counter, i['symbol'])
+        counter += 1
+    selected_market = input('Select Market to manipulate:')
+    return selected_market
+
+
+def list_all_my_open_orders():
+    '''Print all open order on Exchange
+    Checks for delisted BSV'''
+    # Get my open exchange orders
+    exchange_info = public_api.get_exchange_markets_info()
+    print('My All Open Orders on Exchange:')
+    for i in exchange_info['symbols']:
+        if i['symbol'][:3] != 'BSV':  # BSV delisted!!!
+            # need to submit status parameter (open) to get all current open orders
+            my_exchange_orders = private_api.get_my_exchange_orders(
+                i['symbol'], 'open')
+
+            n = None
+            try:
+                n = my_exchange_orders[0]
+                print('\n')
+                print(i['symbol'])
+            except:
+                n = None
+
+            for n in my_exchange_orders:  # n is a dictionary of trade order data
+                print(n)
+
+
+# clear screen
+clear()
+
+# EXCHANGE DATA
 # Get exchange market info
 #print ('\nGet exchange market info:')
 exchange_info = public_api.get_exchange_markets_info()
-#print(exchange_info)
+# print(exchange_info)
 
-# Get my exchnage trades
-#my_exchange_trades = private_api.get_my_exchange_trades(exchange_info['symbols'][6]['symbol']) # LTC/BTC trades
-print('\nGet my exchnage trades')
-total_trades_amount = 0
-for i in exchange_info['symbols']:
-    if i['symbol'][:3] == 'BSV':
-        my_exchange_trades = private_api.get_my_exchange_trades(i['symbol'])
-        print(bcolors.OKGREEN+i['symbol']+bcolors.ENDC)
-        sumBTC = 0
-        print (my_exchange_trades)
-        
-        if i['symbol'][:3] == 'BTC':#Check pri/sec pair of currencies
-            print(bcolors.FAIL+'BTC!!!'+bcolors.ENDC)
-            BTCpairFlag = True
-        else:
-            BTCpairFlag = False
-        
-        for n in my_exchange_trades:
-            fee = n['fee']
-            price = n['price']
-            print('price:',)
-            print (price)
-            sndQty = n['sndQty']
-            print('sndQty:',)
-            print(sndQty)
-            
-            if BTCpairFlag:# BTC is pri
-                if n['dir'] == 'SELL':# checking order direction, if SELL then fee is in sec
-                    sumBTC = sndQty/price+fee/price+sumBTC
-                else:# checking order direction, if BUY then fee is in pri
-                    sumBTC = sumBTC+sndQty/price+fee# calculate fee from exchange rate in BTC
-            else:# BTC is sec
-                if n['dir'] == 'SELL':# checking order direction, if SELL then fee is in sec
-                    sumBTC = sumBTC+sndQty+fee
-                else:# checking order direction, if BUY then fee is in pri
-                    sumBTC = sumBTC+sndQty+fee*price# calculate fee from exchange rate in BTC
+# # Get my exchnage trades
+# #my_exchange_trades = private_api.get_my_exchange_trades(exchange_info['symbols'][6]['symbol']) # LTC/BTC trades
+# print('\nGet my exchnage trades')
+# total_trades_amount = 0
+# for i in exchange_info['symbols']:
+#     if i['symbol'][:3] == 'LTC':
+#         my_exchange_trades = private_api.get_my_exchange_trades(i['symbol'])
+#         print(bc.OKGREEN+i['symbol']+bc.ENDC)
+#         sumBTC = 0
+#         print (my_exchange_trades)
 
-        print ('SUM:',sumBTC,"\n")
-        total_trades_amount = total_trades_amount + sumBTC
+#         if i['symbol'][:3] == 'BTC':#Check pri/sec pair of currencies
+#             print(bc.FAIL+'BTC!!!'+bc.ENDC)
+#             BTCpairFlag = True
+#         else:
+#             BTCpairFlag = False
+
+#         for n in my_exchange_trades:
+#             fee = n['fee']
+#             price = n['price']
+#             print('price:',)
+#             print (price)
+#             sndQty = n['sndQty']
+#             print('sndQty:',)
+#             print(sndQty)
+
+#             if BTCpairFlag:# BTC is pri
+#                 if n['dir'] == 'SELL':# checking order direction, if SELL then fee is in sec
+#                     sumBTC = sndQty/price+fee/price+sumBTC
+#                 else:# checking order direction, if BUY then fee is in pri
+#                     sumBTC = sumBTC+sndQty/price+fee# calculate fee from exchange rate in BTC
+#             else:# BTC is sec
+#                 if n['dir'] == 'SELL':# checking order direction, if SELL then fee is in sec
+#                     sumBTC = sumBTC+sndQty+fee
+#                 else:# checking order direction, if BUY then fee is in pri
+#                     sumBTC = sumBTC+sndQty+fee*price# calculate fee from exchange rate in BTC
+
+#         print ('SUM:',sumBTC,"\n")
+#         total_trades_amount = total_trades_amount + sumBTC
 # print ('\n')
 # print(bcolors.OKBLUE+str(total_trades_amount)+bcolors.ENDC)
-
-# Get my exchange orders
-# for i in exchange_info['symbols']:
-#     print ('\nGet my exchange orders for:'+i['symbol'])
-#     my_exchange_orders = private_api.get_my_exchange_orders(i['symbol'])# need to submit status parameter (open) to get all current open orders
-#     print (my_exchange_orders)
-# print ('\n')
 
 # Get my fees and trade volume status
 # GET /exchange/api/v2/info/fees/status
 #print('Get my fees and trade volume status:')
 my_fees_volume_status = private_api.get_my_fees()
-#print(my_fees_volume_status)
+# print(my_fees_volume_status)
 
 # Get my current maker fee
 my_current_maker_fee = my_fees_volume_status['makerCoefficient']
@@ -153,72 +206,177 @@ my_current_maker_fee = my_fees_volume_status['takerCoefficient']
 # For your needs, you need to check the latest trades where you will also find the price:
 # file_get_contents($url."trades?market=LTCBTC&limit=1");
 
-print ('\nGet trades for first market:')
-last_trade = public_api.get_exchange_last_trade(exchange_info['symbols'][6]['symbol']) # [6] corresponds to LTC/BTC
-current_price = last_trade[0]['price']# Current (last) trade price
-trade_direction = last_trade[0]['dir']# BUY or SELL
-if trade_direction == 'BUY':
-    print(bcolors.OKGREEN)
+print('\nLast trade for '+get_market_list()
+      [int(current_market)]['symbol']+' market:')
+last_trade = public_api.get_exchange_last_trade(
+    exchange_info['symbols'][int(current_market)]['symbol'])  # [6] corresponds to ETH/BTC
+last_price = last_trade[0]['price']  # Current (last) trade price
+last_trade_direction = last_trade[0]['dir']  # BUY or SELL
+if last_trade_direction == 'BUY':
+    print(bc.OKGREEN)
 else:
-    print(bcolors.WARNING)
-print (current_price, trade_direction)
-print(bcolors.ENDC)
-#calculate minimal trade size in pri currency
+    print(bc.WARNING)
+print(bc.BOLD, last_price, last_trade_direction)
+print(bc.ENDC)
+# calculate minimal trade size in pri currency
 
-#shifting robots
-if (trade_direction == 'BUY'):
-    print(bcolors.HEADER+'Last Trade was BUY!!!'+bcolors.ENDC)
-    limit_price = current_price+0.00000001# if last trade was BUY then my price is MORE than last trade price for 0.00000001
+# shifting robots
+if (last_trade_direction == 'BUY'):
+    print(bc.OKGREEN+'Last Trade was BUY!!!'+bc.ENDC)
+    # if last trade was BUY then my price is MORE than last trade price for 0.00000001
+    limit_price = last_price+0.00000001
 else:
-    print(bcolors.HEADER+'Last Trade was SELL!!!'+bcolors.ENDC)
-    limit_price = current_price-0.00000001# if last trade was BUY then my price is LESS than last trade price for 0.00000001
+    print(bc.WARNING+'Last Trade was SELL!!!'+bc.ENDC)
+    # if last trade was BUY then my price is LESS than last trade price for 0.00000001
+    limit_price = last_price-0.00000001
 
-#Calculate minimum trade size
-min_trade_size = MIN_BTC_TRADE/limit_price
-print('Minimum Trade Size:')
-print(min_trade_size)
-print('My Limit Price:')
-print(limit_price)
+# # Calculate minimum trade size for the last order direction trend
+# print(bc.Cyan+bc.BOLD+'')
+# min_trade_size = round(MIN_BTC_TRADE/limit_price, 8)
+# print('Minimum Trade Size:')
+# print(min_trade_size)
+# print('My Limit Price:')
+# print(limit_price)
 
-
-
+print('\n')
 
 while True:
-    
-    # BUY/SELL closing orders spread
-    # Get exchange orderbook
 
-    print ('\nGet exchange orderbook:')
-    exchange_orderbook = public_api.get_exchange_orderbook(exchange_info['symbols'][6]['symbol'], 1)
-    #print (exchange_orderbook)
+    # BUY/SELL closing orders spread
+    # Get exchange orderbook BUY/SELL spread range
+
+    # Refresh exchange info - do we really need it?
+    exchange_info = public_api.get_exchange_markets_info()
+
+    #print ('\nGet exchange orderbook:')
+    exchange_orderbook = public_api.get_exchange_orderbook(
+        exchange_info['symbols'][int(current_market)]['symbol'], 5) # number of last trades
+    last_trade = public_api.get_exchange_last_trade(
+        exchange_info['symbols'][int(current_market)]['symbol'])
+    last_price = last_trade[0]['price']  # Current (last) trade price
+
+    # print(exchange_orderbook)
+    # print(current_market)
+    print(bc.BOLD+'\nCurrent Market: ',
+          exchange_info['symbols'][int(current_market)]['symbol'],'\n'+bc.ENDC)
     #print ('\n')
+    print('Market size\tPrice (BTC)\n')
+
+    for i in reversed(exchange_orderbook['sell']):
+        print ("%08.8f"%i[1],'\t',bc.WARNING, "%08.8f"%i[0], bc.ENDC)
+    print(bc.DARKGREY+'Last trade price ', "%08.8f"%last_price, bc.ENDC)
+    for i in exchange_orderbook['buy']:
+        print ("%08.8f"%i[1],'\t',bc.OKGREEN,"%08.8f"%i[0],bc.ENDC)
+
+    print ('\n\n')
 
     buy_edge_price = exchange_orderbook['buy'][0][0]
     buy_edge_amount = exchange_orderbook['buy'][0][1]
     sell_edge_price = exchange_orderbook['sell'][0][0]
     sell_edge_amount = exchange_orderbook['sell'][0][1]
-    print(bcolors.OKGREEN+'Buy amount:\t',buy_edge_amount)
-    print('Buy price:\t',buy_edge_price)
-    print(bcolors.DARKGREY+'Exchange Rate:\t',current_price)
-    print(bcolors.WARNING+'Sell price:\t',sell_edge_price)
-    print('Sell amount:\t',sell_edge_amount)
-    print(bcolors.ENDC)
 
-    sell_or_buy=input('Sell(0) or Buy(1)?')
+    # print(bc.BOLD+bc.WARNING+'Sell amount:\t', sell_edge_amount)
+    # print(bc.ENDC+bc.WARNING+'Sell price:\t', sell_edge_price)
+
+    # print(bc.DARKGREY+'Exchange Rate:\t', last_price)
+
+    # print(bc.OKGREEN+'Buy price:\t', buy_edge_price)
+    # print(bc.OKGREEN+bc.BOLD+'Buy amount:\t', buy_edge_amount)
+
+    # print(bc.ENDC)
+
+
+    # print(bc.WARNING, sell_edge_amount, '\t', sell_edge_price, bc.ENDC)
+    
+    # print(bc.DARKGREY+'Exchange Rate:\t', last_price, bc.ENDC)
+
+    # print(bc.OKGREEN, buy_edge_amount, '\t', buy_edge_price, bc.ENDC)
+    
+
+
+    sell_or_buy = input(
+        'Buy(1) | Sell(2) | Shift BUY Robots(3) | Shift SELL Robots(4) | My Open Orders(5) | Select Market(6) | Quit(q)? ')
+
     clear()
 
-    if sell_or_buy == '0':
-        limit_price = buy_edge_price-0.00000001
-        print(bcolors.WARNING)
-    else:
-        print(bcolors.OKGREEN)
-        limit_price = buy_edge_price+0.00000001
+    if sell_or_buy == 'q':  # Quit program
+        exit()
 
-    #Calculate minimum trade size
-    min_trade_size = MIN_BTC_TRADE/limit_price
-    print('Minimum Trade Size:\n')
-    print(min_trade_size)
-    print('\nAmount to SELL (My Limit Price):\n')
-    print(limit_price)
-    print(bcolors.ENDC)
-   
+    if sell_or_buy == '1':  # Display BUY advice
+
+        limit_price = round((buy_edge_price+0.00000001), 8)
+        print(bc.OKGREEN+'B U Y advice:')
+
+        # Calculate minimum trade size
+        min_trade_size = round(MIN_BTC_TRADE/limit_price, 8)
+        print('\nLimit Price:\n'+bc.BOLD)
+        print(limit_price, bc.ENDC)
+
+        print(bc.OKGREEN+'\nAmount to BUY:\n'+bc.BOLD)
+        print(min_trade_size)
+        print(bc.ENDC)
+
+    elif sell_or_buy == '2':  # Display SELL advice
+        limit_price = round((sell_edge_price-0.00000001), 8)
+        print(bc.WARNING+'S E L L advice:')
+
+        # Calculate minimum trade size
+        min_trade_size = round(MIN_BTC_TRADE/limit_price, 8)
+
+        print('\nLimit Price:\n'+bc.BOLD)
+        print(limit_price, bc.ENDC)
+
+        print(bc.WARNING+'\nAmount to SELL:\n'+bc.BOLD)
+        print(min_trade_size)
+        print(bc.ENDC)
+
+    elif sell_or_buy == '3':  # Making Robot Shifting Orders SELL
+        # Do orders
+        # Cancel previous exchange order
+        if 'my_exchange_orders' in globals(): # Check that previous order was created programmatically
+            cancelled_order = private_api.cancel_exchange_order(exchange_info['symbols'][int(current_market)]['symbol'], my_exchange_orders[0]['orderId'])
+            print ('Previous Order Cancelled:')
+            print(cancelled_order)
+            print('\n')
+
+        # # Create minimal sell limit exchange shift order
+        new_buy_limit_order = private_api.create_exchange_limit_order(exchange_info['symbols'][int(current_market)]['symbol'], 'buy', min_trade_size, limit_price)
+        print ('Creating new Shift BUY Order:'+bc.Magenta)
+        print (new_buy_limit_order['price'], new_buy_limit_order['origQty'])
+        print ('\n'+bc.ENDC)
+        
+        # Get my exchange orders
+        my_exchange_orders = private_api.get_my_exchange_orders(exchange_info['symbols'][int(current_market)]['symbol'],'open')
+        # print (my_exchange_orders)
+        # print ('\n')
+
+        wait = input('Hit Enter to continue:') # pause execution till user hit Enter key
+
+    elif sell_or_buy == '4': # Making Robot Shifting Orders BUY
+        pass
+        # # Create buy limit exchange order
+        # new_sell_limit_order = private_api.create_exchange_limit_order(exchange_info['symbols'][0]['symbol'], 'sell', 10, 0.1)
+        # print (new_sell_limit_order)
+        # print('\n')
+
+    elif sell_or_buy == '5':  # List all my Open Orders
+        list_all_my_open_orders()
+    elif sell_or_buy == '6':  # Select coin
+        current_market = market_select()
+    else:
+        exit()
+
+# # Create buy limit exchange order
+# new_sell_limit_order = private_api.create_exchange_limit_order(exchange_info['symbols'][0]['symbol'], 'sell', 10, 0.1)
+# print (new_sell_limit_order)
+# print ('\n')
+
+# # Create sell limit exchange order
+# new_buy_limit_order = private_api.create_exchange_limit_order(exchange_info['symbols'][0]['symbol'], 'buy', 0.1, 0.1)
+# print (new_buy_limit_order)
+# print ('\n')
+
+# # Cancel exchange order
+# cancelled_order = private_api.cancel_exchange_order(exchange_info['symbols'][0]['symbol'], my_exchange_orders[0]['orderId'])
+# print(cancelled_order)
+# print ('\n')
