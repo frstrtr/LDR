@@ -275,8 +275,9 @@ class private_api:
     def get_my_fees(self):
         return self.request('GET', '/exchange/api/v2/info/fees/status/', '', None)
 
-    def get_my_exchange_orders(self, market):
-        return self.request('GET', '/exchange/api/v2/myOrders', 'market=' + market, None)
+    def get_my_exchange_orders(self, market, orderStatus):
+        query = "market={}&orderStatus={}".format(market, orderStatus)
+        return self.request('GET', '/exchange/api/v2/myOrders', query, None)
 
     def get_my_exchange_trades(self, market):
         return self.request('GET','/exchange/api/v2/myTrades', 'market=' + market, None)
