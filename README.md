@@ -90,3 +90,22 @@ x. WebSocket subscription
 todo:
 - Sell check routines
 - check currency minimal amount based on endpoint data
+
+Robot bahaviour:
+- always cut minimal amount to be first in line
+- has trade boundary limits (hi and lo)
+- if there two or more robots at the boundary let them do their job till boundaries
+- exchange didn't show automated trades in the exchange interface, it has a big lag or even didn't show orders at the spread edges!!!
+
+Counterspells:
+- always check robot market size
+- if they fall to minmal trade size - stop and add funds to the last order
+- always watch for opposite direction extremums prices and don't cross it if price too bad
+- have funds on both sides
+- shift robots to get out of market orders and real prices
+- double check market sizes on both directions and minimum/maximum price boundaries outside trade edges (spread)
+- always check possibility to buy from the other edge if it's not far to reach
+- if there are more than two robots, you need just one trade to start them rolling to their boundaries without your help
+- let the gap before the edge be more than minimum coin part, since robots on other side can wake up and eat your shift trade
+- if robots stops - check if there NN and wait for movements in directions, step sizes and order sizes.
+
