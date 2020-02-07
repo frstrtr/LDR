@@ -79,8 +79,14 @@ case of no BTC in pair???
   5.2 List more than 1 last trade
   5.3 Refresh shift price function
   5.4 Mark my orders with my trade size in my order book
+  5.5 calculate percentage of my order related to market size
+  5.6 Set limit price boundary automation algo
+  
 6. Robot pressure
 7. 
 
 x. WebSocket subscription
 
+todo:
+- Sell check routines
+- check currency minimal amount based on endpoint data
