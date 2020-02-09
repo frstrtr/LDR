@@ -109,3 +109,26 @@ Counterspells:
 - let the gap before the edge be more than minimum coin part, since robots on other side can wake up and eat your shift trade
 - if robots stops - check if there NN and wait for movements in directions, step sizes and order sizes.
 
+
+# probably Withstand
+NiceHash bot for automatic order management.
+
+Features
+
+Create new orders (including when 2FA is turned on)
+
+Automatically manage orders for:
+
+- price adjustment - keep price as low as possible and sustain wanted speed, but keep price below max specified
+
+- refilling - automatically refill order when it is nearly depleted
+
+- re-creation - automatically create new order if order is removed by the system (timeout or any other reason)
+
+Ability to adjust max price and speed limit for each monitored order
+
+Pool manager to easily define new pools, remove them or use for orders
+
+Console window showing all important events or errors
+
+Custom order handlers
