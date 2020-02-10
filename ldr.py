@@ -101,7 +101,7 @@ def list_my_all_open_orders():
     Checks for delisted BSV'''
     # Get my open exchange orders
     exchange_info = public_api.get_exchange_markets_info()
-    print('My All Open Orders on Exchange:')
+    print('My All Open Orders on Exchange:\n')
     for i in exchange_info['symbols']:
         if i['symbol'][:3] != 'BSV':  # BSV delisted!!!
             # need to submit status parameter (open) to get all current open orders
@@ -111,13 +111,16 @@ def list_my_all_open_orders():
             n = None
             try:
                 n = my_exchange_orders[0]
-                print('\n')
-                print(i['symbol'])
+                print('\n',i['symbol'])
+                # Table header
+                print('Submit Time\t\t Last Response Time\t Type\t Dir\t origQty\t origSndQty\t executedQty\t executedSndQty\t price\t\t state')
             except:
                 n = None
 
             for n in my_exchange_orders:  # n is a dictionary of trade order data
-                print(n)
+                print(convert_time(n['submitTime']), '\t', convert_time(n['lastResponseTime']), '\t', n['type'], '\t', n['side'], '\t',
+                      form(n['origQty']), '\t', form(n['origSndQty']), '\t', form(n['executedQty']), '\t', form(n['executedSndQty']), '\t', form(n['price']), '\t', n['state'])
+
 
 
 def get_latest_shift_advice(direction='buy'):
@@ -189,72 +192,61 @@ def percentage(part, whole):
     return 100 * float(part)/float(whole)
 
 
-# # #                              M A I N   P R O G R A M                            # # #
-'''____________________________________________________________________________________'''
+def convert_time(time_to_convert):
+    """Converts Nicehash Unix-like time stamp to dd-mm-YYYY HH:MM:SS format
+
+    Arguments:
+        time_to_convert {[string Nicehash Unix timestamp]} -- [Nicehash Unix-like timestamp]
+
+    Returns:
+        [String] -- [date and time dd-mm-YYYY HH:MM:SS]
+    """
+    return datetime.utcfromtimestamp(int(time_to_convert)/1000000).strftime('%d-%m-%Y %H:%M:%S')
 
 
-# clear screen
-clear()
-
-# EXCHANGE DATA
-# Get exchange market info
-# print ('\nGet exchange market info:')
-exchange_info = public_api.get_exchange_markets_info()
-# print(exchange_info)
-current_market_list = get_market_list()  # get list of all markets
+def form(amount):
+    return "%08.8f" % float(amount)
 
 
-# Get my fees and trade volume status
-# GET /exchange/api/v2/info/fees/status
-# print('Get my fees and trade volume status:')
-my_fees_volume_status = private_api.get_my_fees()
-# print(my_fees_volume_status)
+def sell_buy_routine():
+    global buy_edge_price
+    global buy_edge_amount
+    global sell_edge_price
+    global sell_edge_amount
+    global exchange_info
+    global limit_price
 
-# Get my current maker fee
-my_current_maker_fee = my_fees_volume_status['makerCoefficient']
-# Get my current taker fee
-my_current_maker_fee = my_fees_volume_status['takerCoefficient']
+    exchange_info = public_api.get_exchange_markets_info()
+    print('\nLast trade for '+get_market_list()
+          [int(current_market)]['symbol']+' market:', end=' ')
+    last_trade = public_api.get_exchange_last_trade(
+        exchange_info['symbols'][int(current_market)]['symbol'])
+    last_price = last_trade[0]['price']  # Current (last) trade price
+    last_trade_direction = last_trade[0]['dir']  # BUY or SELL
+    if last_trade_direction == 'BUY':
+        print(bc.OKGREEN, end=' ')
+    else:
+        print(bc.WARNING, end=' ')
+    print(bc.BOLD, last_price, last_trade_direction, bc.ENDC)
+    # calculate minimal trade size in pri currency
 
-# Get trades for LTC/BTC [6] market
-# Calculate current minimal trade volume for given currency
-# For your needs, you need to check the latest trades where you will also find the price:
-# file_get_contents($url."trades?market=LTCBTC&limit=1");
+    # shifting robots recomendations
+    if (last_trade_direction == 'BUY'):
+        print(bc.OKGREEN+'\nLast Trade was BUY!!!'+bc.ENDC)
+        # if last trade was BUY then my price is MORE than last trade price for 0.00000001
+        limit_price = last_price+0.00000001
+    else:
+        print(bc.WARNING+'\nLast Trade was SELL!!!'+bc.ENDC)
+        # if last trade was BUY then my price is LESS than last trade price for 0.00000001
+        limit_price = last_price-0.00000001
 
-print('\nLast trade for '+get_market_list()
-      [int(current_market)]['symbol']+' market:')
-last_trade = public_api.get_exchange_last_trade(
-    exchange_info['symbols'][int(current_market)]['symbol'])  # [6] corresponds to ETH/BTC
-last_price = last_trade[0]['price']  # Current (last) trade price
-last_trade_direction = last_trade[0]['dir']  # BUY or SELL
-if last_trade_direction == 'BUY':
-    print(bc.OKGREEN)
-else:
-    print(bc.WARNING)
-print(bc.BOLD, last_price, last_trade_direction)
-print(bc.ENDC)
-# calculate minimal trade size in pri currency
-
-# shifting robots
-if (last_trade_direction == 'BUY'):
-    print(bc.OKGREEN+'Last Trade was BUY!!!'+bc.ENDC)
-    # if last trade was BUY then my price is MORE than last trade price for 0.00000001
-    limit_price = last_price+0.00000001
-else:
-    print(bc.WARNING+'Last Trade was SELL!!!'+bc.ENDC)
-    # if last trade was BUY then my price is LESS than last trade price for 0.00000001
-    limit_price = last_price-0.00000001
-
-# # Calculate minimum trade size for the last order direction trend
-# print(bc.Cyan+bc.BOLD+'')
-# min_trade_size = round(MIN_BTC_TRADE/limit_price, 8)
-# print('Minimum Trade Size:')
-# print(min_trade_size)
-# print('My Limit Price:')
-# print(limit_price)
-
-print('\n')
-
-while True:
+    # # Calculate minimum trade size for the last order direction trend
+    # print(bc.Cyan+bc.BOLD+'')
+    # min_trade_size = round(MIN_BTC_TRADE/limit_price, 8)
+    # print('Minimum Trade Size:')
+    # print(min_trade_size)
+    # print('My Limit Price:')
+    # print(limit_price)
 
     # BUY/SELL closing orders spread
     # Get exchange orderbook BUY/SELL spread range
@@ -265,8 +257,10 @@ while True:
     # print ('\nGet exchange orderbook:')
     exchange_orderbook = public_api.get_exchange_orderbook(
         exchange_info['symbols'][int(current_market)]['symbol'], 5)  # number of last trades
+
     last_trade = public_api.get_exchange_last_trade(
         exchange_info['symbols'][int(current_market)]['symbol'])
+
     last_price = last_trade[0]['price']  # Current (last) trade price
 
     # print(exchange_orderbook)
@@ -338,8 +332,37 @@ while True:
 
     # print(bc.OKGREEN, buy_edge_amount, '\t', buy_edge_price, bc.ENDC)
 
+
+# # #                              M A I N   P R O G R A M                            # # #
+'''____________________________________________________________________________________'''
+
+
+# clear screen
+clear()
+
+# EXCHANGE DATA
+# Get exchange market info
+# print ('\nGet exchange market info:')
+
+# print(exchange_info)
+current_market_list = get_market_list()  # get list of all markets
+
+
+# Get my fees and trade volume status
+# GET /exchange/api/v2/info/fees/status
+# print('Get my fees and trade volume status:')
+my_fees_volume_status = private_api.get_my_fees()
+# print(my_fees_volume_status)
+
+# Get my current maker fee
+my_current_maker_fee = my_fees_volume_status['makerCoefficient']
+# Get my current taker fee
+my_current_maker_fee = my_fees_volume_status['takerCoefficient']
+
+while True:
+
     sell_or_buy = input(
-        'Buy(1) | Sell(2) | Shift BUY Robots(3) | Shift SELL Robots(4) | My Open Orders(5) | Select Market(6) | Select Manual Order Size(7) | My Trades(8) | Quit(q)? ')
+        '\nBuy(1) | Sell(2) | Shift BUY Robots(3) | Shift SELL Robots(4) | My Open Orders(5) | Select Market(6) | Select Manual Order Size(7) | My Trades(8) | Quit(q)? ')
 
     clear()
 
@@ -348,30 +371,30 @@ while True:
 
     if sell_or_buy == '1':  # Display BUY advice
 
+        sell_buy_routine()
+
         limit_price = round((buy_edge_price+0.00000001), 8)
         print(bc.OKGREEN+'B U Y advice:')
 
         # Calculate minimum trade size
         min_trade_size = round(MIN_BTC_TRADE/limit_price, 8)
-        print('\nLimit Price:\n'+bc.BOLD)
-        print("%08.8f" % limit_price, bc.ENDC)
+        print('\nLimit Price: '+bc.BOLD+"%08.8f" % limit_price, bc.ENDC)
 
-        print(bc.OKGREEN+'\nAmount to BUY:\n'+bc.BOLD)
-        print("%08.8f" % min_trade_size)
+        print(bc.OKGREEN+'\nAmount to BUY: '+bc.BOLD+"%08.8f" % min_trade_size)
         print(bc.ENDC)
 
     elif sell_or_buy == '2':  # Display SELL advice
+        sell_buy_routine()
+
         limit_price = round((sell_edge_price-0.00000001), 8)
         print(bc.WARNING+'S E L L advice:')
 
         # Calculate minimum trade size
         min_trade_size = round(MIN_BTC_TRADE/limit_price, 8)
 
-        print('\nLimit Price:\n'+bc.BOLD)
-        print("%08.8f" % limit_price, bc.ENDC)
+        print('\nLimit Price: '+bc.BOLD+"%08.8f" % limit_price, bc.ENDC)
 
-        print(bc.WARNING+'\nAmount to SELL:\n'+bc.BOLD)
-        print("%08.8f" % min_trade_size)
+        print(bc.WARNING+'Amount to SELL: '+bc.BOLD+"%08.8f" % min_trade_size)
         print(bc.ENDC)
 
     elif sell_or_buy == '3':  # Making Robot Shifting Orders SELL
@@ -443,15 +466,16 @@ while True:
             if i['dir'] == 'SELL':
                 highlight_color = bc.WARNING
                 total_fees_paid += float(i['fee'])  # fee in primary currency
-                total_trade_profit_loses += float(i['price'])*float(i['qty'])# (+) if we get BTC
-            else:# BUY
+                # (+) if we get BTC
+                total_trade_profit_loses += float(i['price'])*float(i['qty'])
+            else:  # BUY
                 highlight_color = bc.OKGREEN
                 # fee in secondary currency
                 total_fees_paid += float(i['fee'])*float(i['price'])
-                total_trade_profit_loses += -float(i['price'])*float(i['qty'])# (-) if we spend BTC
-            
+                total_trade_profit_loses += - \
+                    float(i['price'])*float(i['qty'])  # (-) if we spend BTC
 
-            print(highlight_color, datetime.utcfromtimestamp(int(i['time'])/1000000).strftime('%d-%m-%Y %H:%M:%S'), '\t', i['dir'], '\t',
+            print(highlight_color, convert_time(i['time']), '\t', i['dir'], '\t',
                   "%08.8f" % i['price'], '\t', "%08.8f" % i['qty'], '\t', "%08.8f" % i['sndQty'], '\t', "%08.8f" % i['fee'], bc.ENDC)
 
         print(bc.Magenta+bc.BOLD+'\n Total fees paid: ',
