@@ -90,6 +90,7 @@ x. WebSocket subscription
 todo:
 - Sell check routines
 - check currency minimal amount based on endpoint data
+- calculate minimal opposite profit based on fees and order sizes
 
 Robot bahaviour:
 - always cut minimal amount to be first in line
