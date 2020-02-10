@@ -279,8 +279,9 @@ class private_api:
         query = "market={}&orderStatus={}".format(market, orderStatus)
         return self.request('GET', '/exchange/api/v2/myOrders', query, None)
 
-    def get_my_exchange_trades(self, market):
-        return self.request('GET','/exchange/api/v2/myTrades', 'market=' + market, None)
+    def get_my_exchange_trades(self, market, limit):
+        query = "market={}&limit={}".format(market, limit)
+        return self.request('GET','/exchange/api/v2/myTrades', query, None)
         
     def create_exchange_limit_order(self, market, side, quantity, price):
         query = "market={}&side={}&type=limit&quantity={}&price={}".format(market, side, quantity, price)
@@ -316,8 +317,12 @@ if __name__ == "__main__":
     private_api = private_api(options.base, options.org, options.key, options.secret)
 
     params = ''
+    body =''
     if options.params is not None:
         params = options.params
+    
+    if options.body is not None:
+        body = options.body
 
     try:
         response = private_api.request(options.method, options.path, params, options.body)
