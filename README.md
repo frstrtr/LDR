@@ -83,7 +83,7 @@ case of no BTC in pair???
   5.5.1 Market selector Number and Name
   5.6 My trades summary calculator
   
-  5.6 Set limit price boundary automation algo
+  5.7 Set limit price boundary automation algo
   
 6. Robot pressure
 7. 
@@ -94,6 +94,8 @@ todo:
 - Sell check routines
 - check currency minimal amount based on endpoint data
 - calculate minimal opposite profit based on fees and order sizes
+- check profit if it less than 0.0001BTC with fees
+- calculate summary market size before my orders
 
 Robot bahaviour:
 - always cut minimal amount to be first in line
