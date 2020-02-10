@@ -86,7 +86,7 @@ case of no BTC in pair???
   5.7 Set limit price boundary automation algo
   
 6. Robot pressure
-7. 
+7. WSS
 
 x. WebSocket subscription
 
