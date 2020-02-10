@@ -1,7 +1,8 @@
 import nicehash
 import json
 from bcolors import bcolors as bc
-#from tabulate import tabulate
+# from tabulate import tabulate
+from datetime import datetime
 
 # import only system from os
 from os import system, name
@@ -15,7 +16,8 @@ from keys import host, organisation_id, secret, key
 BTCpairFlag = False  # Pair Flag for BTC is sec = False, pri = True
 MIN_BTC_TRADE = 0.0001  # minimal BTC trade size
 current_market = 12  # ETHBTC by default
-manual_order_size = None # Automatical calculation
+current_market_name = 'ETHBTC'
+manual_order_size = None  # Automatical calculation
 
 # Create public api object
 public_api = nicehash.public_api(host, False)
@@ -57,10 +59,6 @@ def get_market_list():
 def list_non_zero_balances():
     ''' Get balance for all currencies with funds'''
     currencies = public_api.get_curencies()
-    # my_accounts = private_api.get_accounts()
-    # print('\nMy accounts:')
-    # print(my_accounts)
-    # print ('\n')
 
     # Get balance for address with non-zero balance
     for accounts in currencies['currencies']:
@@ -93,8 +91,9 @@ def market_select():
     for i in current_market_list:
         print(counter, i['symbol'])
         counter += 1
-    selected_market = input('Select Market to manipulate:')
-    return selected_market
+    selected_market = input('Select Market: ')
+    selected_market_name = current_market_list[int(selected_market)]['symbol']
+    return selected_market, selected_market_name
 
 
 def list_my_all_open_orders():
@@ -185,6 +184,7 @@ def get_latest_shift_advice(direction='buy'):
 
     return edge_price, edge_amount
 
+
 def percentage(part, whole):
     return 100 * float(part)/float(whole)
 
@@ -198,55 +198,15 @@ clear()
 
 # EXCHANGE DATA
 # Get exchange market info
-#print ('\nGet exchange market info:')
+# print ('\nGet exchange market info:')
 exchange_info = public_api.get_exchange_markets_info()
 # print(exchange_info)
+current_market_list = get_market_list()  # get list of all markets
 
-# # Get my exchnage trades
-# #my_exchange_trades = private_api.get_my_exchange_trades(exchange_info['symbols'][6]['symbol']) # LTC/BTC trades
-# print('\nGet my exchnage trades')
-# total_trades_amount = 0
-# for i in exchange_info['symbols']:
-#     if i['symbol'][:3] == 'LTC':
-#         my_exchange_trades = private_api.get_my_exchange_trades(i['symbol'])
-#         print(bc.OKGREEN+i['symbol']+bc.ENDC)
-#         sumBTC = 0
-#         print (my_exchange_trades)
-
-#         if i['symbol'][:3] == 'BTC':#Check pri/sec pair of currencies
-#             print(bc.FAIL+'BTC!!!'+bc.ENDC)
-#             BTCpairFlag = True
-#         else:
-#             BTCpairFlag = False
-
-#         for n in my_exchange_trades:
-#             fee = n['fee']
-#             price = n['price']
-#             print('price:',)
-#             print (price)
-#             sndQty = n['sndQty']
-#             print('sndQty:',)
-#             print(sndQty)
-
-#             if BTCpairFlag:# BTC is pri
-#                 if n['dir'] == 'SELL':# checking order direction, if SELL then fee is in sec
-#                     sumBTC = sndQty/price+fee/price+sumBTC
-#                 else:# checking order direction, if BUY then fee is in pri
-#                     sumBTC = sumBTC+sndQty/price+fee# calculate fee from exchange rate in BTC
-#             else:# BTC is sec
-#                 if n['dir'] == 'SELL':# checking order direction, if SELL then fee is in sec
-#                     sumBTC = sumBTC+sndQty+fee
-#                 else:# checking order direction, if BUY then fee is in pri
-#                     sumBTC = sumBTC+sndQty+fee*price# calculate fee from exchange rate in BTC
-
-#         print ('SUM:',sumBTC,"\n")
-#         total_trades_amount = total_trades_amount + sumBTC
-# print ('\n')
-# print(bcolors.OKBLUE+str(total_trades_amount)+bcolors.ENDC)
 
 # Get my fees and trade volume status
 # GET /exchange/api/v2/info/fees/status
-#print('Get my fees and trade volume status:')
+# print('Get my fees and trade volume status:')
 my_fees_volume_status = private_api.get_my_fees()
 # print(my_fees_volume_status)
 
@@ -302,7 +262,7 @@ while True:
     # Refresh exchange info - do we really need it?
     exchange_info = public_api.get_exchange_markets_info()
 
-    #print ('\nGet exchange orderbook:')
+    # print ('\nGet exchange orderbook:')
     exchange_orderbook = public_api.get_exchange_orderbook(
         exchange_info['symbols'][int(current_market)]['symbol'], 5)  # number of last trades
     last_trade = public_api.get_exchange_last_trade(
@@ -313,7 +273,7 @@ while True:
     # print(current_market)
     print(bc.BOLD+'\nCurrent Market: ',
           exchange_info['symbols'][int(current_market)]['symbol'], '\n'+bc.ENDC)
-    #print ('\n')
+    # print ('\n')
 
     refresh_my_exchange_orders = private_api.get_my_exchange_orders(
         exchange_info['symbols'][int(current_market)]['symbol'], 'open')
@@ -342,12 +302,13 @@ while True:
 
     for i in exchange_orderbook['buy']:
 
-        if str(i[0]) in [pair[1] for pair in my_order_data]: # checking if my order price in the edge of the ordrebook
+        # checking if my order price in the edge of the ordrebook
+        if str(i[0]) in [pair[1] for pair in my_order_data]:
 
-            for pair in my_order_data: # searching for order size corresponded to my order price
+            for pair in my_order_data:  # searching for order size corresponded to my order price
                 if pair[1] == str(i[0]):
                     my_order_size = pair[0]
-            order_to_market_ratio = percentage(my_order_size,i[1])
+            order_to_market_ratio = percentage(my_order_size, i[1])
 
             print("%08.8f" % i[1], '\t', bc.OKGREEN,
                   "%08.8f" % i[0], my_order_size, "%05.2f" % order_to_market_ratio, '\t%'+bc.ENDC)
@@ -378,7 +339,7 @@ while True:
     # print(bc.OKGREEN, buy_edge_amount, '\t', buy_edge_price, bc.ENDC)
 
     sell_or_buy = input(
-        'Buy(1) | Sell(2) | Shift BUY Robots(3) | Shift SELL Robots(4) | My Open Orders(5) | Select Market(6) | Select Manual Order Size(7) | Quit(q)? ')
+        'Buy(1) | Sell(2) | Shift BUY Robots(3) | Shift SELL Robots(4) | My Open Orders(5) | Select Market(6) | Select Manual Order Size(7) | My Trades(8) | Quit(q)? ')
 
     clear()
 
@@ -421,6 +382,7 @@ while True:
         limit_price, min_trade_size = get_latest_shift_advice('buy')
         if manual_order_size:
             min_trade_size = manual_order_size
+        manual_order_size = None  # drop manual order size for automation
         # print (limit_price)
         # print (min_trade_size)
 
@@ -457,10 +419,45 @@ while True:
 
     elif sell_or_buy == '5':  # List all my Open Orders
         list_my_all_open_orders()
-    elif sell_or_buy == '6':  # Select coin
-        current_market = market_select()
+    elif sell_or_buy == '6':  # Select trade pair
+        current_market, current_market_name = market_select()
     elif sell_or_buy == '7':  # Select Order size manually
         manual_order_size = input('Enter order size:')
+    elif sell_or_buy == '8':
+        # list my trades from history for specified pair
+        # current_market = market_select() select or not select here?
+        # # Get my exchnage trades
+
+        total_fees_paid = 0  # initialize fee totals calculations
+        total_trade_profit_loses = 0
+
+        my_exchange_trades = private_api.get_my_exchange_trades(
+            exchange_info['symbols'][int(current_market)]['symbol'], -1)  # -1 for all orders
+
+        print(bc.BOLD+bc.Magenta, 'My Trades on ',
+              current_market_name, ' market:\n'+bc.ENDC)
+
+        print(' Date Time\t\t Dir\t Price\t\t qty\t\t sndQty\t\t fee')
+
+        for i in reversed(my_exchange_trades):
+            if i['dir'] == 'SELL':
+                highlight_color = bc.WARNING
+                total_fees_paid += float(i['fee'])  # fee in primary currency
+                total_trade_profit_loses += float(i['price'])*float(i['qty'])# (+) if we get BTC
+            else:# BUY
+                highlight_color = bc.OKGREEN
+                # fee in secondary currency
+                total_fees_paid += float(i['fee'])*float(i['price'])
+                total_trade_profit_loses += -float(i['price'])*float(i['qty'])# (-) if we spend BTC
+            
+
+            print(highlight_color, datetime.utcfromtimestamp(int(i['time'])/1000000).strftime('%d-%m-%Y %H:%M:%S'), '\t', i['dir'], '\t',
+                  "%08.8f" % i['price'], '\t', "%08.8f" % i['qty'], '\t', "%08.8f" % i['sndQty'], '\t', "%08.8f" % i['fee'], bc.ENDC)
+
+        print(bc.Magenta+bc.BOLD+'\n Total fees paid: ',
+              "%08.8f" % total_fees_paid, ' BTC\n\n Total profit(+)/loses(-): ', "%08.8f" % float(total_trade_profit_loses-total_fees_paid), ' BTC'+bc.ENDC)
+        # print (my_exchange_trades)
+        # print ('\n')
     else:
         exit()
 
