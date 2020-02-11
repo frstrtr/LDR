@@ -15,8 +15,9 @@ from keys import host, organisation_id, secret, key
 
 BTCpairFlag = False  # Pair Flag for BTC is sec = False, pri = True
 MIN_BTC_TRADE = 0.0001  # minimal BTC trade size
-current_market = 12  # ETHBTC by default
+current_market = int(12)  # ETHBTC by default
 current_market_name = 'ETHBTC'
+current_currency_name = 'ETH'
 manual_order_size = None  # Automatical calculation
 
 # Create public api object
@@ -111,7 +112,7 @@ def list_my_all_open_orders():
             n = None
             try:
                 n = my_exchange_orders[0]
-                print('\n',i['symbol'])
+                print('\n', i['symbol'])
                 # Table header
                 print('Submit Time\t\t Last Response Time\t Type\t Dir\t origQty\t origSndQty\t executedQty\t executedSndQty\t price\t\t state')
             except:
@@ -120,7 +121,6 @@ def list_my_all_open_orders():
             for n in my_exchange_orders:  # n is a dictionary of trade order data
                 print(convert_time(n['submitTime']), '\t', convert_time(n['lastResponseTime']), '\t', n['type'], '\t', n['side'], '\t',
                       form(n['origQty']), '\t', form(n['origSndQty']), '\t', form(n['executedQty']), '\t', form(n['executedSndQty']), '\t', form(n['price']), '\t', n['state'])
-
 
 
 def get_latest_shift_advice(direction='buy'):
@@ -240,21 +240,10 @@ def sell_buy_routine():
         # if last trade was BUY then my price is LESS than last trade price for 0.00000001
         limit_price = last_price-0.00000001
 
-    # # Calculate minimum trade size for the last order direction trend
-    # print(bc.Cyan+bc.BOLD+'')
-    # min_trade_size = round(MIN_BTC_TRADE/limit_price, 8)
-    # print('Minimum Trade Size:')
-    # print(min_trade_size)
-    # print('My Limit Price:')
-    # print(limit_price)
-
-    # BUY/SELL closing orders spread
-    # Get exchange orderbook BUY/SELL spread range
-
     # Refresh exchange info - do we really need it?
     exchange_info = public_api.get_exchange_markets_info()
 
-    # print ('\nGet exchange orderbook:')
+    # Get exchange orderbook with depth of 5 orders
     exchange_orderbook = public_api.get_exchange_orderbook(
         exchange_info['symbols'][int(current_market)]['symbol'], 5)  # number of last trades
 
@@ -263,11 +252,8 @@ def sell_buy_routine():
 
     last_price = last_trade[0]['price']  # Current (last) trade price
 
-    # print(exchange_orderbook)
-    # print(current_market)
     print(bc.BOLD+'\nCurrent Market: ',
           exchange_info['symbols'][int(current_market)]['symbol'], '\n'+bc.ENDC)
-    # print ('\n')
 
     refresh_my_exchange_orders = private_api.get_my_exchange_orders(
         exchange_info['symbols'][int(current_market)]['symbol'], 'open')
@@ -451,6 +437,8 @@ while True:
         # current_market = market_select() select or not select here?
         # # Get my exchnage trades
 
+        sell_buy_routine()
+
         total_fees_paid = 0  # initialize fee totals calculations
         total_trade_profit_loses = 0
 
@@ -480,8 +468,23 @@ while True:
 
         print(bc.Magenta+bc.BOLD+'\n Total fees paid: ',
               "%08.8f" % total_fees_paid, ' BTC\n\n Total profit(+)/loses(-): ', "%08.8f" % float(total_trade_profit_loses-total_fees_paid), ' BTC'+bc.ENDC)
-        # print (my_exchange_trades)
-        # print ('\n')
+
+        print(bc.BOLD+bc.Cyan+'profit/loss if You SELL market +/- minimal amount:')
+        print(limit_price)
+        # Get all curencies
+
+        my_current_currency_account = private_api.get_accounts_for_currency(
+            current_currency_name)
+        my_current_currency_balance = float(
+            my_current_currency_account['balance'])
+        print(my_current_currency_balance)
+        trade_amount_est = my_current_currency_balance*limit_price - \
+            my_current_currency_balance*limit_price*float(my_current_maker_fee)
+
+        print(trade_amount_est)
+        print(total_trade_profit_loses+trade_amount_est)
+        print(bc.ENDC)
+
     else:
         exit()
 

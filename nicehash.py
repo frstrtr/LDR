@@ -59,7 +59,7 @@ class public_api:
     def get_markets(self):
         return self.request('GET', '/main/api/v2/mining/markets/', '', None)
 
-    def get_curencies(self):
+    def get_currencies(self):
         return self.request('GET', '/main/api/v2/public/currencies/', '', None)
 
     def get_multialgo_info(self):
