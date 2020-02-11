@@ -19,6 +19,11 @@ current_market = int(12)  # ETHBTC by default
 current_market_name = 'ETHBTC'
 current_currency_name = 'ETH'
 manual_order_size = None  # Automatical calculation
+manual_order_limit_price = 0
+
+last_fees_paid = 0
+last_trade_profit_loses = 0
+
 
 # Create public api object
 public_api = nicehash.public_api(host, False)
@@ -41,7 +46,7 @@ def clear():
 
 def get_symbol_list():
     ''' Get all curencies symbols as list'''
-    currencies = public_api.get_curencies()
+    currencies = public_api.get_currencies()
     currencies_list = list(currencies['currencies'])
     symbol_list = list()
     for i in currencies_list:
@@ -59,7 +64,7 @@ def get_market_list():
 
 def list_non_zero_balances():
     ''' Get balance for all currencies with funds'''
-    currencies = public_api.get_curencies()
+    currencies = public_api.get_currencies()
 
     # Get balance for address with non-zero balance
     for accounts in currencies['currencies']:
@@ -94,7 +99,18 @@ def market_select():
         counter += 1
     selected_market = input('Select Market: ')
     selected_market_name = current_market_list[int(selected_market)]['symbol']
-    return selected_market, selected_market_name
+    if current_market_list[int(selected_market)]['symbol'][-3:] == 'BTC':
+        sndName = 'BTC'
+        current_currency_symbol = current_market_list[int(
+            selected_market)]['symbol'].rsplit(sndName, 1)[0]
+
+    else:  # USDT markets
+        sndName = 'USDT'
+        current_currency_symbol = current_market_list[int(
+            selected_market)]['symbol'].rsplit(sndName, 1)[0]
+
+    print('Selected: ', current_currency_symbol)
+    return selected_market, selected_market_name, current_currency_symbol
 
 
 def list_my_all_open_orders():
@@ -259,6 +275,7 @@ def sell_buy_routine():
         exchange_info['symbols'][int(current_market)]['symbol'], 'open')
 
     my_order_data = list()
+
     for my_order in refresh_my_exchange_orders:
         # collect all Market Size, Price pairs in one list
         my_order_data.append([my_order['origQty'], my_order['price']])
@@ -348,7 +365,7 @@ my_current_maker_fee = my_fees_volume_status['takerCoefficient']
 while True:
 
     sell_or_buy = input(
-        '\nBuy(1) | Sell(2) | Shift BUY Robots(3) | Shift SELL Robots(4) | My Open Orders(5) | Select Market(6) | Select Manual Order Size(7) | My Trades(8) | Quit(q)? ')
+        '\nBuy(1) | Sell(2) | Shift BUY Robots(3) | Shift SELL Robots(4) | My Open Orders(5) | Select Market(6) | Select Manual Order Size(7) | My Trades(8) | Manual Limit price(9) | Quit(q)? ')
 
     clear()
 
@@ -429,7 +446,7 @@ while True:
     elif sell_or_buy == '5':  # List all my Open Orders
         list_my_all_open_orders()
     elif sell_or_buy == '6':  # Select trade pair
-        current_market, current_market_name = market_select()
+        current_market, current_market_name, current_currency_name = market_select()
     elif sell_or_buy == '7':  # Select Order size manually
         manual_order_size = input('Enter order size:')
     elif sell_or_buy == '8':
@@ -467,24 +484,62 @@ while True:
                   "%08.8f" % i['price'], '\t', "%08.8f" % i['qty'], '\t', "%08.8f" % i['sndQty'], '\t', "%08.8f" % i['fee'], bc.ENDC)
 
         print(bc.Magenta+bc.BOLD+'\n Total fees paid: ',
-              "%08.8f" % total_fees_paid, ' BTC\n\n Total profit(+)/loses(-): ', "%08.8f" % float(total_trade_profit_loses-total_fees_paid), ' BTC'+bc.ENDC)
+              "%08.8f" % total_fees_paid, ' BTC\n\n Total profit(+)/loses(-): ', "%08.8f" % float(total_trade_profit_loses-total_fees_paid), ' BTC\n'+bc.ENDC)
 
-        print(bc.BOLD+bc.Cyan+'profit/loss if You SELL market +/- minimal amount:')
-        print(limit_price)
-        # Get all curencies
-
+        # Get currency sign
         my_current_currency_account = private_api.get_accounts_for_currency(
             current_currency_name)
+
         my_current_currency_balance = float(
             my_current_currency_account['balance'])
-        print(my_current_currency_balance)
+
+        print(bc.BOLD+bc.Cyan+'My current wallet balance:\t\t\t',
+              my_current_currency_balance, current_currency_name)
+
+        print('Recommended limit price:\t\t\t', round(limit_price, 8))
+
+        # profit/loss if You SELL market +/- minimal amount
+        if manual_order_limit_price != 0:
+            limit_price = manual_order_limit_price
+
         trade_amount_est = my_current_currency_balance*limit_price - \
             my_current_currency_balance*limit_price*float(my_current_maker_fee)
 
-        print(trade_amount_est)
-        print(total_trade_profit_loses+trade_amount_est)
-        print(bc.ENDC)
+        print('Trade amount estimate, including fees:\t\t',
+              round(trade_amount_est, 8), 'BTC')
 
+        print('Profit/loss with this possible trade, cumulative: ',
+              round(total_trade_profit_loses+trade_amount_est, 8), 'BTC')
+
+        # Calculate last 2 BUY/SELL pair Profit/Loss
+
+        for i in my_exchange_trades:
+            if i['dir'] == 'BUY':  # SELL
+
+                # highlight_color = bc.OKGREEN
+                # fee in secondary currency
+                last_fees_paid += float(i['fee'])*float(i['price'])
+                last_trade_profit_loses += - \
+                    float(i['price'])*float(i['qty'])  # (-) if we spend BTC
+
+            elif i['dir'] == 'SELL':
+                break
+                # highlight_color = bc.WARNING
+                # total_fees_paid += float(i['fee'])  # fee in primary currency
+                # # (+) if we get BTC
+                # total_trade_profit_loses += float(i['price'])*float(i['qty'])
+
+        print('\nProfit/Loses: ', "%08.8f" %  round(last_trade_profit_loses, 8), 'Fees: ', "%08.8f" %  round(last_fees_paid, 8))
+
+        print('Profit/loss with last BUY/SELL orders and market trade: ',
+              "%08.8f" %  round((last_trade_profit_loses + last_fees_paid + trade_amount_est), 8))
+
+        print(bc.ENDC)
+        manual_order_limit_price = 0 # reset manual orderlimit price
+
+    elif sell_or_buy == '9': # set manual order limit price
+        sell_buy_routine()
+        manual_order_limit_price = float(input('Enter manual order limit price: '))
     else:
         exit()
 
