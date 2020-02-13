@@ -3,8 +3,9 @@ from time import mktime, sleep
 import uuid
 import hmac
 import json
+import ast
 from hashlib import sha256
-#import optparse
+# import optparse
 import sys
 import requests
 # # QT
@@ -19,7 +20,7 @@ try:
     import thread
 except ImportError:
     import _thread as thread
-
+from bcolors import bcolors as bc
 
 # NiceHash web-socket
 # The base endpoint is: wss://exchange-<market>-ws.nicehash.com
@@ -40,7 +41,7 @@ Subscribe to mytrades channel - stream requires to be signed. Push my trade info
 Unsubscribe to mytrades channel
 {"m":"unsubscribe.mytrades"}
 
-Subscribe to orders channel - stream requires to be signed. 
+Subscribe to orders channel - stream requires to be signed.
 {"m":"subscribe.orders"}
 Unsubscribe to orders channel
 {"m":"unsubscribe.orders"}
@@ -54,6 +55,7 @@ Subscribe to trade statistics channel
 {"m":"subscribe.statistics"}
 Unsubscribe to statistics channel
 {"m":"unsubscribe.statistics"} """
+
 
 class private_api:
 
@@ -106,9 +108,9 @@ class private_api:
                           message, sha256).hexdigest()
         # Create X-Auth: API_KEY:SIGNATURE -> 787ba136-c1bc-4684-a215-69f8d86a1300:e8e360f598c15115c2dc324966fcb24244135d7d9cba0dfb2fde041083f6ea1c
         xauth = self.key + ":" + digest
-        
+
         # Pass query string parameters:
-        #wss://exchange-tzectbtc-ws.nicehash.com/                           URL
+        # wss://exchange-tzectbtc-ws.nicehash.com/                           URL
         # ?a=787ba136-c1bc-4684-a215-69f8d86a1300                           API_KEY
         # :
         # e8e360f598c15115c2dc324966fcb24244135d7d9cba0dfb2fde041083f6ea1c  SIGNATURE
@@ -128,7 +130,41 @@ class private_api:
 
 
 def on_message(ws, message):
-    print(message)
+    # main subscription parser
+    # Manage OrderBook Stream:
+    m_dict = ast.literal_eval(message)
+    if m_dict['m'] == 'ob.s':
+        # table while we implement windows later
+        print(bc.BOLD+bc.OKGREEN+' Buy'+bc.ENDC+'\t\t\t\t\t\t' +
+              bc.BOLD+bc.WARNING+'Sell'+bc.ENDC)  # header
+        
+        buy_sell_list = list(zip(reversed(m_dict['b']), reversed(m_dict['s'])))
+
+        for (b, s) in buy_sell_list:
+            formatted_output(b, s)
+
+    if m_dict['m'] == 'ob.u':
+        print('_______________________________________________________')
+        # print(m_dict['b'], m_dict['s']) # debug
+        b = m_dict['b']
+        s = m_dict['s']
+        formatted_output(b, s)
+        print('buy:',b,'sell:',s)  # debug
+
+
+def formatted_output(b, s):
+    # print('buy, sell: ',b,s) # debug
+    if len(b) == 2 and len(s) == 2:
+        print(bc.OKGREEN, "%08.8f" % b[0], "%08.8f" %
+              b[1], bc.ENDC, end='\t\t\t')  # buy pairs
+        print(bc.WARNING, "%08.8f" %
+              s[0], "%08.8f" % s[1], bc.ENDC)  # sell pairs
+    elif len(b) == 0:  # If no Buy data -> print Sell data
+        print(bc.WARNING, "%08.8f" %
+              s[0][0], "%08.8f" % s[0][1], bc.ENDC)  # sell pairs
+    elif len(s) == 0:  # If no Sell data -> print Buy data
+        print(bc.OKGREEN, "%08.8f" % b[0][0], "%08.8f" %
+              b[0][1], bc.ENDC)  # buy pairs
 
 
 def on_error(ws, error):
@@ -141,9 +177,9 @@ def on_close(ws):
 
 def on_open(ws):
     def run(*args):
-        #ws.send('{"m":"subscribe.orderbook"}')
+        # ws.send('{"m":"subscribe.orderbook"}')
         ws.send('{"m":"subscribe.orderbook"}')
-        sleep(30)
+        sleep(100)  # listening for messages for 10 seconds
         ws.send('{"m":"unsubscribe.orderbook"}')
         ws.close()
         print("thread terminating...")
@@ -161,4 +197,3 @@ if __name__ == "__main__":
                                 on_close=on_close)
     ws.on_open = on_open
     ws.run_forever()
-
