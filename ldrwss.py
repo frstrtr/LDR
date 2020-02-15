@@ -149,7 +149,7 @@ def on_message(ws, message):
         b = m_dict['b']
         s = m_dict['s']
         formatted_output(b, s)
-        print('buy:',b,'sell:',s)  # debug
+        # print('buy:',b,'sell:',s)  # debug
 
 
 def formatted_output(b, s):

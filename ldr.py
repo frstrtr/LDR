@@ -496,7 +496,7 @@ while True:
         print(bc.BOLD+bc.Cyan+'My current wallet balance:\t\t\t',
               my_current_currency_balance, current_currency_name)
 
-        print('Recommended limit price:\t\t\t', round(limit_price, 8))
+        print('Recommended limit price:\t\t\t', "%08.8f" % round(limit_price, 8))
 
         # profit/loss if You SELL market +/- minimal amount
         if manual_order_limit_price != 0:
@@ -506,7 +506,7 @@ while True:
             my_current_currency_balance*limit_price*float(my_current_maker_fee)
 
         print('Trade amount estimate, including fees:\t\t',
-              round(trade_amount_est, 8), 'BTC')
+              "%08.8f" % round(trade_amount_est, 8), 'BTC')
 
         print('Profit/loss with this possible trade, cumulative: ',
               round(total_trade_profit_loses+trade_amount_est, 8), 'BTC')
