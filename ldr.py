@@ -19,6 +19,8 @@ current_market = int(12)  # ETHBTC by default
 current_market_name = 'ETHBTC'
 current_currency_name = 'ETH'
 manual_order_size = None  # Automatical calculation
+
+global manual_order_limit_price  # set manual Limit Price if we set it manually
 manual_order_limit_price = 0
 
 last_fees_paid = 0
@@ -135,8 +137,12 @@ def list_my_all_open_orders():
                 n = None
 
             for n in my_exchange_orders:  # n is a dictionary of trade order data
+                if n['side'] == 'BUY':
+                    print(bc.OKGREEN, end='')  # Green for BUY
+                else:
+                    print(bc.WARNING, end='')  # Red for SELL
                 print(convert_time(n['submitTime']), '\t', convert_time(n['lastResponseTime']), '\t', n['type'], '\t', n['side'], '\t',
-                      form(n['origQty']), '\t', form(n['origSndQty']), '\t', form(n['executedQty']), '\t', form(n['executedSndQty']), '\t', form(n['price']), '\t', n['state'])
+                      form(n['origQty']), '\t', form(n['origSndQty']), '\t', form(n['executedQty']), '\t', form(n['executedSndQty']), '\t', form(n['price']), '\t', n['state'], bc.ENDC)
 
 
 def get_latest_shift_advice(direction='buy'):
@@ -496,11 +502,13 @@ while True:
         print(bc.BOLD+bc.Cyan+'My current wallet balance:\t\t\t',
               my_current_currency_balance, current_currency_name)
 
-        print('Recommended limit price:\t\t\t', "%08.8f" % round(limit_price, 8))
-
         # profit/loss if You SELL market +/- minimal amount
         if manual_order_limit_price != 0:
+            print('Debug: Manual Limit Price Set!')  # Debug
             limit_price = manual_order_limit_price
+
+        print('Recommended limit price:\t\t\t',
+              "%08.8f" % round(limit_price, 8))
 
         trade_amount_est = my_current_currency_balance*limit_price - \
             my_current_currency_balance*limit_price*float(my_current_maker_fee)
@@ -529,17 +537,19 @@ while True:
                 # # (+) if we get BTC
                 # total_trade_profit_loses += float(i['price'])*float(i['qty'])
 
-        print('\nProfit/Loses: ', "%08.8f" %  round(last_trade_profit_loses, 8), 'Fees: ', "%08.8f" %  round(last_fees_paid, 8))
+        print('\nProfit/Loses: ', "%08.8f" % round(last_trade_profit_loses,
+                                                   8), 'Fees: ', "%08.8f" % round(last_fees_paid, 8))
 
         print('Profit/loss with last BUY/SELL orders and market trade: ',
-              "%08.8f" %  round((last_trade_profit_loses + last_fees_paid + trade_amount_est), 8))
+              "%08.8f" % round((last_trade_profit_loses + last_fees_paid + trade_amount_est), 8))
 
         print(bc.ENDC)
-        manual_order_limit_price = 0 # reset manual orderlimit price
+        manual_order_limit_price = 0  # reset manual orderlimit price
 
-    elif sell_or_buy == '9': # set manual order limit price
+    elif sell_or_buy == '9':  # set manual order limit price
         sell_buy_routine()
-        manual_order_limit_price = float(input('Enter manual order limit price: '))
+        manual_order_limit_price = float(
+            input('Enter manual order limit price: '))
     else:
         exit()
 

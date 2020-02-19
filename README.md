@@ -83,10 +83,14 @@ case of no BTC in pair???
   5.5.1 Market selector Number and Name
   5.6 My trades summary calculator
   
+  7. WSS
+
+  5.6.1 Calculate market volume till price
+  
   5.7 Set limit price boundary automation algo
   
 6. Robot pressure
-7. WSS
+
 
 x. WebSocket subscription
 
