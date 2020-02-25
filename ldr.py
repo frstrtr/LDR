@@ -341,229 +341,230 @@ def sell_buy_routine():
 
     # print(bc.OKGREEN, buy_edge_amount, '\t', buy_edge_price, bc.ENDC)
 
+if __name__ == "__main__":
 
-# # #                              M A I N   P R O G R A M                            # # #
-'''____________________________________________________________________________________'''
-
-
-# clear screen
-clear()
-
-# EXCHANGE DATA
-# Get exchange market info
-# print ('\nGet exchange market info:')
-
-# print(exchange_info)
-current_market_list = get_market_list()  # get list of all markets
+    # # #                              M A I N   P R O G R A M                            # # #
+    '''____________________________________________________________________________________'''
 
 
-# Get my fees and trade volume status
-# GET /exchange/api/v2/info/fees/status
-# print('Get my fees and trade volume status:')
-my_fees_volume_status = private_api.get_my_fees()
-# print(my_fees_volume_status)
-
-# Get my current maker fee
-my_current_maker_fee = my_fees_volume_status['makerCoefficient']
-# Get my current taker fee
-my_current_maker_fee = my_fees_volume_status['takerCoefficient']
-
-while True:
-
-    sell_or_buy = input(
-        '\nBuy(1) | Sell(2) | Shift BUY Robots(3) | Shift SELL Robots(4) | My Open Orders(5) | Select Market(6) | Select Manual Order Size(7) | My Trades(8) | Manual Limit price(9) | Quit(q)? ')
-
+    # clear screen
     clear()
 
-    if sell_or_buy == 'q':  # Quit program
-        exit()
+    # EXCHANGE DATA
+    # Get exchange market info
+    # print ('\nGet exchange market info:')
 
-    if sell_or_buy == '1':  # Display BUY advice
+    # print(exchange_info)
+    current_market_list = get_market_list()  # get list of all markets
 
-        sell_buy_routine()
 
-        limit_price = round((buy_edge_price+0.00000001), 8)
-        print(bc.OKGREEN+'B U Y advice:')
+    # Get my fees and trade volume status
+    # GET /exchange/api/v2/info/fees/status
+    # print('Get my fees and trade volume status:')
+    my_fees_volume_status = private_api.get_my_fees()
+    # print(my_fees_volume_status)
 
-        # Calculate minimum trade size
-        min_trade_size = round(MIN_BTC_TRADE/limit_price, 8)
-        print('\nLimit Price: '+bc.BOLD+"%08.8f" % limit_price, bc.ENDC)
+    # Get my current maker fee
+    my_current_maker_fee = my_fees_volume_status['makerCoefficient']
+    # Get my current taker fee
+    my_current_maker_fee = my_fees_volume_status['takerCoefficient']
 
-        print(bc.OKGREEN+'\nAmount to BUY: '+bc.BOLD+"%08.8f" % min_trade_size)
-        print(bc.ENDC)
+    while True:
 
-    elif sell_or_buy == '2':  # Display SELL advice
-        sell_buy_routine()
+        sell_or_buy = input(
+            '\nBuy(1) | Sell(2) | Shift BUY Robots(3) | Shift SELL Robots(4) | My Open Orders(5) | Select Market(6) | Select Manual Order Size(7) | My Trades(8) | Manual Limit price(9) | Quit(q)? ')
 
-        limit_price = round((sell_edge_price-0.00000001), 8)
-        print(bc.WARNING+'S E L L advice:')
+        clear()
 
-        # Calculate minimum trade size
-        min_trade_size = round(MIN_BTC_TRADE/limit_price, 8)
+        if sell_or_buy == 'q':  # Quit program
+            exit()
 
-        print('\nLimit Price: '+bc.BOLD+"%08.8f" % limit_price, bc.ENDC)
+        if sell_or_buy == '1':  # Display BUY advice
 
-        print(bc.WARNING+'Amount to SELL: '+bc.BOLD+"%08.8f" % min_trade_size)
-        print(bc.ENDC)
+            sell_buy_routine()
 
-    elif sell_or_buy == '3':  # Making Robot Shifting Orders SELL
-        # Do orders
-        # Cancel previous exchange order
+            limit_price = round((buy_edge_price+0.00000001), 8)
+            print(bc.OKGREEN+'B U Y advice:')
 
-        # refresh latest trade date and advice calculations
-        limit_price, min_trade_size = get_latest_shift_advice('buy')
-        if manual_order_size:
-            min_trade_size = manual_order_size
-        manual_order_size = None  # drop manual order size for automation
-        # print (limit_price)
-        # print (min_trade_size)
+            # Calculate minimum trade size
+            min_trade_size = round(MIN_BTC_TRADE/limit_price, 8)
+            print('\nLimit Price: '+bc.BOLD+"%08.8f" % limit_price, bc.ENDC)
 
-        if 'my_exchange_orders' in globals():  # Check that previous order was created programmatically
-            cancelled_order = private_api.cancel_exchange_order(exchange_info['symbols'][int(
-                current_market)]['symbol'], my_exchange_orders[0]['orderId'])
-            print('Previous Order Cancelled:'+bc.Magenta)
-            print("%08.8f" % cancelled_order['origQty'],
-                  '\t', "%08.8f" % cancelled_order['price'])
+            print(bc.OKGREEN+'\nAmount to BUY: '+bc.BOLD+"%08.8f" % min_trade_size)
             print(bc.ENDC)
 
-        # # Create minimal sell limit exchange shift order
-        new_buy_limit_order = private_api.create_exchange_limit_order(
-            exchange_info['symbols'][int(current_market)]['symbol'], 'buy', min_trade_size, limit_price)
-        print('Creating new Shift BUY Order:'+bc.Magenta)
-        print("%08.8f" % new_buy_limit_order['origQty'],
-              '\t', "%08.8f" % new_buy_limit_order['price'])
-        print(bc.ENDC)
+        elif sell_or_buy == '2':  # Display SELL advice
+            sell_buy_routine()
 
-        # Get my exchange orders to cancel latest one in the begining
-        my_exchange_orders = private_api.get_my_exchange_orders(
-            exchange_info['symbols'][int(current_market)]['symbol'], 'open')
-        # print (my_exchange_orders)
-        # print ('\n')
+            limit_price = round((sell_edge_price-0.00000001), 8)
+            print(bc.WARNING+'S E L L advice:')
 
-        # wait = input('Hit Enter to continue:') # pause execution till user hit Enter key
+            # Calculate minimum trade size
+            min_trade_size = round(MIN_BTC_TRADE/limit_price, 8)
 
-    elif sell_or_buy == '4':  # Making Robot Shifting Orders BUY
-        pass
-        # # Create buy limit exchange order
-        # new_sell_limit_order = private_api.create_exchange_limit_order(exchange_info['symbols'][0]['symbol'], 'sell', 10, 0.1)
-        # print (new_sell_limit_order)
-        # print('\n')
+            print('\nLimit Price: '+bc.BOLD+"%08.8f" % limit_price, bc.ENDC)
 
-    elif sell_or_buy == '5':  # List all my Open Orders
-        list_my_all_open_orders()
-    elif sell_or_buy == '6':  # Select trade pair
-        current_market, current_market_name, current_currency_name = market_select()
-    elif sell_or_buy == '7':  # Select Order size manually
-        manual_order_size = input('Enter order size:')
-    elif sell_or_buy == '8':
-        # list my trades from history for specified pair
-        # current_market = market_select() select or not select here?
-        # # Get my exchnage trades
+            print(bc.WARNING+'Amount to SELL: '+bc.BOLD+"%08.8f" % min_trade_size)
+            print(bc.ENDC)
 
-        sell_buy_routine()
+        elif sell_or_buy == '3':  # Making Robot Shifting Orders SELL
+            # Do orders
+            # Cancel previous exchange order
 
-        total_fees_paid = 0  # initialize fee totals calculations
-        total_trade_profit_loses = 0
+            # refresh latest trade date and advice calculations
+            limit_price, min_trade_size = get_latest_shift_advice('buy')
+            if manual_order_size:
+                min_trade_size = manual_order_size
+            manual_order_size = None  # drop manual order size for automation
+            # print (limit_price)
+            # print (min_trade_size)
 
-        my_exchange_trades = private_api.get_my_exchange_trades(
-            exchange_info['symbols'][int(current_market)]['symbol'], -1)  # -1 for all orders
+            if 'my_exchange_orders' in globals():  # Check that previous order was created programmatically
+                cancelled_order = private_api.cancel_exchange_order(exchange_info['symbols'][int(
+                    current_market)]['symbol'], my_exchange_orders[0]['orderId'])
+                print('Previous Order Cancelled:'+bc.Magenta)
+                print("%08.8f" % cancelled_order['origQty'],
+                    '\t', "%08.8f" % cancelled_order['price'])
+                print(bc.ENDC)
 
-        print(bc.BOLD+bc.Magenta, 'My Trades on ',
-              current_market_name, ' market:\n'+bc.ENDC)
+            # # Create minimal sell limit exchange shift order
+            new_buy_limit_order = private_api.create_exchange_limit_order(
+                exchange_info['symbols'][int(current_market)]['symbol'], 'buy', min_trade_size, limit_price)
+            print('Creating new Shift BUY Order:'+bc.Magenta)
+            print("%08.8f" % new_buy_limit_order['origQty'],
+                '\t', "%08.8f" % new_buy_limit_order['price'])
+            print(bc.ENDC)
 
-        print(' Date Time\t\t Dir\t Price\t\t qty\t\t sndQty\t\t fee')
+            # Get my exchange orders to cancel latest one in the begining
+            my_exchange_orders = private_api.get_my_exchange_orders(
+                exchange_info['symbols'][int(current_market)]['symbol'], 'open')
+            # print (my_exchange_orders)
+            # print ('\n')
 
-        for i in reversed(my_exchange_trades):
-            if i['dir'] == 'SELL':
-                highlight_color = bc.WARNING
-                total_fees_paid += float(i['fee'])  # fee in primary currency
-                # (+) if we get BTC
-                total_trade_profit_loses += float(i['price'])*float(i['qty'])
-            else:  # BUY
-                highlight_color = bc.OKGREEN
-                # fee in secondary currency
-                total_fees_paid += float(i['fee'])*float(i['price'])
-                total_trade_profit_loses += - \
-                    float(i['price'])*float(i['qty'])  # (-) if we spend BTC
+            # wait = input('Hit Enter to continue:') # pause execution till user hit Enter key
 
-            print(highlight_color, convert_time(i['time']), '\t', i['dir'], '\t',
-                  "%08.8f" % i['price'], '\t', "%08.8f" % i['qty'], '\t', "%08.8f" % i['sndQty'], '\t', "%08.8f" % i['fee'], bc.ENDC)
+        elif sell_or_buy == '4':  # Making Robot Shifting Orders BUY
+            pass
+            # # Create buy limit exchange order
+            # new_sell_limit_order = private_api.create_exchange_limit_order(exchange_info['symbols'][0]['symbol'], 'sell', 10, 0.1)
+            # print (new_sell_limit_order)
+            # print('\n')
 
-        print(bc.Magenta+bc.BOLD+'\n Total fees paid: ',
-              "%08.8f" % total_fees_paid, ' BTC\n\n Total profit(+)/loses(-): ', "%08.8f" % float(total_trade_profit_loses-total_fees_paid), ' BTC\n'+bc.ENDC)
+        elif sell_or_buy == '5':  # List all my Open Orders
+            list_my_all_open_orders()
+        elif sell_or_buy == '6':  # Select trade pair
+            current_market, current_market_name, current_currency_name = market_select()
+        elif sell_or_buy == '7':  # Select Order size manually
+            manual_order_size = input('Enter order size:')
+        elif sell_or_buy == '8':
+            # list my trades from history for specified pair
+            # current_market = market_select() select or not select here?
+            # # Get my exchnage trades
 
-        # Get currency sign
-        my_current_currency_account = private_api.get_accounts_for_currency(
-            current_currency_name)
+            sell_buy_routine()
 
-        my_current_currency_balance = float(
-            my_current_currency_account['balance'])
+            total_fees_paid = 0  # initialize fee totals calculations
+            total_trade_profit_loses = 0
 
-        print(bc.BOLD+bc.Cyan+'My current wallet balance:\t\t\t',
-              my_current_currency_balance, current_currency_name)
+            my_exchange_trades = private_api.get_my_exchange_trades(
+                exchange_info['symbols'][int(current_market)]['symbol'], -1)  # -1 for all orders
 
-        # profit/loss if You SELL market +/- minimal amount
-        if manual_order_limit_price != 0:
-            print('Debug: Manual Limit Price Set!')  # Debug
-            limit_price = manual_order_limit_price
+            print(bc.BOLD+bc.Magenta, 'My Trades on ',
+                current_market_name, ' market:\n'+bc.ENDC)
 
-        print('Recommended limit price:\t\t\t',
-              "%08.8f" % round(limit_price, 8))
+            print(' Date Time\t\t Dir\t Price\t\t qty\t\t sndQty\t\t fee')
 
-        trade_amount_est = my_current_currency_balance*limit_price - \
-            my_current_currency_balance*limit_price*float(my_current_maker_fee)
+            for i in reversed(my_exchange_trades):
+                if i['dir'] == 'SELL':
+                    highlight_color = bc.WARNING
+                    total_fees_paid += float(i['fee'])  # fee in primary currency
+                    # (+) if we get BTC
+                    total_trade_profit_loses += float(i['price'])*float(i['qty'])
+                else:  # BUY
+                    highlight_color = bc.OKGREEN
+                    # fee in secondary currency
+                    total_fees_paid += float(i['fee'])*float(i['price'])
+                    total_trade_profit_loses += - \
+                        float(i['price'])*float(i['qty'])  # (-) if we spend BTC
 
-        print('Trade amount estimate, including fees:\t\t',
-              "%08.8f" % round(trade_amount_est, 8), 'BTC')
+                print(highlight_color, convert_time(i['time']), '\t', i['dir'], '\t',
+                    "%08.8f" % i['price'], '\t', "%08.8f" % i['qty'], '\t', "%08.8f" % i['sndQty'], '\t', "%08.8f" % i['fee'], bc.ENDC)
 
-        print('Profit/loss with this possible trade, cumulative: ',
-              round(total_trade_profit_loses+trade_amount_est, 8), 'BTC')
+            print(bc.Magenta+bc.BOLD+'\n Total fees paid: ',
+                "%08.8f" % total_fees_paid, ' BTC\n\n Total profit(+)/loses(-): ', "%08.8f" % float(total_trade_profit_loses-total_fees_paid), ' BTC\n'+bc.ENDC)
 
-        # Calculate last 2 BUY/SELL pair Profit/Loss
+            # Get currency sign
+            my_current_currency_account = private_api.get_accounts_for_currency(
+                current_currency_name)
 
-        for i in my_exchange_trades:
-            if i['dir'] == 'BUY':  # SELL
+            my_current_currency_balance = float(
+                my_current_currency_account['balance'])
 
-                # highlight_color = bc.OKGREEN
-                # fee in secondary currency
-                last_fees_paid += float(i['fee'])*float(i['price'])
-                last_trade_profit_loses += - \
-                    float(i['price'])*float(i['qty'])  # (-) if we spend BTC
+            print(bc.BOLD+bc.Cyan+'My current wallet balance:\t\t\t',
+                my_current_currency_balance, current_currency_name)
 
-            elif i['dir'] == 'SELL':
-                break
-                # highlight_color = bc.WARNING
-                # total_fees_paid += float(i['fee'])  # fee in primary currency
-                # # (+) if we get BTC
-                # total_trade_profit_loses += float(i['price'])*float(i['qty'])
+            # profit/loss if You SELL market +/- minimal amount
+            if manual_order_limit_price != 0:
+                print('Debug: Manual Limit Price Set!')  # Debug
+                limit_price = manual_order_limit_price
 
-        print('\nProfit/Loses: ', "%08.8f" % round(last_trade_profit_loses,
-                                                   8), 'Fees: ', "%08.8f" % round(last_fees_paid, 8))
+            print('Recommended limit price:\t\t\t',
+                "%08.8f" % round(limit_price, 8))
 
-        print('Profit/loss with last BUY/SELL orders and market trade: ',
-              "%08.8f" % round((last_trade_profit_loses + last_fees_paid + trade_amount_est), 8))
+            trade_amount_est = my_current_currency_balance*limit_price - \
+                my_current_currency_balance*limit_price*float(my_current_maker_fee)
 
-        print(bc.ENDC)
-        manual_order_limit_price = 0  # reset manual orderlimit price
+            print('Trade amount estimate, including fees:\t\t',
+                "%08.8f" % round(trade_amount_est, 8), 'BTC')
 
-    elif sell_or_buy == '9':  # set manual order limit price
-        sell_buy_routine()
-        manual_order_limit_price = float(
-            input('Enter manual order limit price: '))
-    else:
-        exit()
+            print('Profit/loss with this possible trade, cumulative: ',
+                round(total_trade_profit_loses+trade_amount_est, 8), 'BTC')
 
-# # Create buy limit exchange order
-# new_sell_limit_order = private_api.create_exchange_limit_order(exchange_info['symbols'][0]['symbol'], 'sell', 10, 0.1)
-# print (new_sell_limit_order)
-# print ('\n')
+            # Calculate last 2 BUY/SELL pair Profit/Loss
 
-# # Create sell limit exchange order
-# new_buy_limit_order = private_api.create_exchange_limit_order(exchange_info['symbols'][0]['symbol'], 'buy', 0.1, 0.1)
-# print (new_buy_limit_order)
-# print ('\n')
+            for i in my_exchange_trades:
+                if i['dir'] == 'BUY':  # SELL
 
-# # Cancel exchange order
-# cancelled_order = private_api.cancel_exchange_order(exchange_info['symbols'][0]['symbol'], my_exchange_orders[0]['orderId'])
-# print(cancelled_order)
-# print ('\n')
+                    # highlight_color = bc.OKGREEN
+                    # fee in secondary currency
+                    last_fees_paid += float(i['fee'])*float(i['price'])
+                    last_trade_profit_loses += - \
+                        float(i['price'])*float(i['qty'])  # (-) if we spend BTC
+
+                elif i['dir'] == 'SELL':
+                    break
+                    # highlight_color = bc.WARNING
+                    # total_fees_paid += float(i['fee'])  # fee in primary currency
+                    # # (+) if we get BTC
+                    # total_trade_profit_loses += float(i['price'])*float(i['qty'])
+
+            print('\nProfit/Loses: ', "%08.8f" % round(last_trade_profit_loses,
+                                                    8), 'Fees: ', "%08.8f" % round(last_fees_paid, 8))
+
+            print('Profit/loss with last BUY/SELL orders and market trade: ',
+                "%08.8f" % round((last_trade_profit_loses + last_fees_paid + trade_amount_est), 8))
+
+            print(bc.ENDC)
+            manual_order_limit_price = 0  # reset manual orderlimit price
+
+        elif sell_or_buy == '9':  # set manual order limit price
+            sell_buy_routine()
+            manual_order_limit_price = float(
+                input('Enter manual order limit price: '))
+        else:
+            exit()
+
+    # # Create buy limit exchange order
+    # new_sell_limit_order = private_api.create_exchange_limit_order(exchange_info['symbols'][0]['symbol'], 'sell', 10, 0.1)
+    # print (new_sell_limit_order)
+    # print ('\n')
+
+    # # Create sell limit exchange order
+    # new_buy_limit_order = private_api.create_exchange_limit_order(exchange_info['symbols'][0]['symbol'], 'buy', 0.1, 0.1)
+    # print (new_buy_limit_order)
+    # print ('\n')
+
+    # # Cancel exchange order
+    # cancelled_order = private_api.cancel_exchange_order(exchange_info['symbols'][0]['symbol'], my_exchange_orders[0]['orderId'])
+    # print(cancelled_order)
+    # print ('\n')
