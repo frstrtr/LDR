@@ -8,8 +8,8 @@ class CustomTableModel(QAbstractTableModel):
         self.load_data(data)
 
     def load_data(self, data):
-        self.input_dates = data[0].values
-        self.input_magnitudes = data[1].values
+        self.input_dates = data[0]  # .values
+        self.input_magnitudes = data[1]  # .values
 
         self.column_count = 2
         self.row_count = len(self.input_magnitudes)
@@ -35,10 +35,10 @@ class CustomTableModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             if column == 0:
                 raw_date = self.input_dates[row]
-                date = "{}".format(raw_date.toPython())
-                return date[:-3]
+                date = raw_date # "{}".format(raw_date.toPython())
+                return date # [:-3]
             elif column == 1:
-                return "{:.2f}".format(self.input_magnitudes[row])
+                return self.input_magnitudes[row] # "{:.2f}".format(self.input_magnitudes[row])
         elif role == Qt.BackgroundRole:
             return QColor(Qt.white)
         elif role == Qt.TextAlignmentRole:

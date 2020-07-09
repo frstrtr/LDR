@@ -25,6 +25,9 @@ def array_2_table(self, array, qtable):
 
 def read_data(orders_dict):  # makes a tuple as pairs of symbol:origQty
     for i in range(0, len(orders_dict)):
+
+
+        
         if type(orders_dict[i]) == str:
             symbol = orders_dict[i]
             data_field = orders_dict[i+1]['origQty']  # ['origQty'] # debug
@@ -108,6 +111,8 @@ if __name__ == "__main__":
     # print(bc.ENDC, my_open_orders)
 
     data = read_data(my_open_orders)
+
+    print(data) # debug
 
     widget = Widget(data)
     window = MainWindow(widget)

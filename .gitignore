@@ -132,3 +132,4 @@ dmypy.json
 keys.py
 .vscode/settings.json
 .pylintrc
+*.csv
