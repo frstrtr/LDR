@@ -1,18 +1,25 @@
 import nicehash
+import pandas as pd
+import numpy as np
 import json
 from bcolors import bcolors as bc
+import matplotlib.pyplot as plt
+
 # from tabulate import tabulate
-from datetime import datetime
+
+# import sleep to show output for some time period
+from time import sleep, mktime
+import datetime
+from dateutil import parser
 
 # import only system from os
 from os import system, name
 
-# import sleep to show output for some time period
-from time import sleep
 
 # import account related keys for sign operations
 from keys import host, organisation_id, secret, key
 
+SRC_DATA_FILENAME = 'data.pk1'
 BTCpairFlag = False  # Pair Flag for BTC is sec = False, pri = True
 MIN_BTC_TRADE = 0.0001  # minimal BTC trade size
 current_market = int(12)  # ETHBTC by default
@@ -31,6 +38,13 @@ public_api = nicehash.public_api(host, False)
 
 # Create private api object
 private_api = nicehash.private_api(host, organisation_id, key, secret, False)
+
+
+def print_by_line(arr):
+    n = 0
+    for i in arr:
+        print(n, '::', i)
+        n += 1
 
 
 def clear():
@@ -121,8 +135,10 @@ def list_my_all_open_orders():  # todo add current trade price to the data raw u
     exchange_info = public_api.get_exchange_markets_info()
     print('My All Open Orders on Exchange:\n')
     for i in exchange_info['symbols']:
-        # print (i) # debug
-        if i['symbol'][:3] != 'BSV' and i['symbol'][:8] != 'LINKUSDT':  # BSV and LINKUSDT delisted!!!
+        # print (i['symbol']) # debug
+        # if any(x not in i['symbol'] for x in ['BSV', 'LINKUSDT','STORMBTC']):
+        # BSV, STORM and LINKUSDT delisted!!!
+        if ('BSV' not in i['symbol']) and ('LINKUSDT' not in i['symbol']) and ('STORMBTC' not in i['symbol']):
             # need to submit status parameter (open) to get all current open orders
             my_exchange_orders = private_api.get_my_exchange_orders(
                 i['symbol'], 'open')
@@ -236,7 +252,7 @@ def convert_time(time_to_convert):
     Returns:
         [String] -- [date and time dd-mm-YYYY HH:MM:SS]
     """
-    return datetime.utcfromtimestamp(int(time_to_convert)/1000000).strftime('%d-%m-%Y %H:%M:%S')
+    return datetime.datetime.utcfromtimestamp(int(time_to_convert)/1000000).strftime('%d-%m-%Y %H:%M:%S')
 
 
 def form(amount):
@@ -384,7 +400,7 @@ if __name__ == "__main__":
     while True:
 
         sell_or_buy = input(
-            '\nBuy(1) | Sell(2) | Shift BUY Robots(3) | Shift SELL Robots(4) | My Open Orders(5) | Select Market(6) | Select Manual Order Size(7) | My Trades(8) | Manual Limit price(9) | Quit(q)? ')
+            '\nBuy(1) | Sell(2) | Shift BUY Robots(3) | Shift SELL Robots(4) | My Open Orders(5) | Select Market(6) | Select Manual Order Size(7) | My Trades(8) | Manual Limit price(9) | Candlesticks (c) | Quit(q)? ')
 
         clear()
 
@@ -570,6 +586,107 @@ if __name__ == "__main__":
             sell_buy_routine()
             manual_order_limit_price = float(
                 input('Enter manual order limit price: '))
+        elif sell_or_buy == 'c':
+
+            # Get candleSticks
+            print('Acquiring Historical Data from Nicehash for',
+                  current_market_name)
+            start_time = input("Enter start date: ")
+
+            if start_time:
+                start_time = parser.parse(start_time).timetuple()
+                start_candlestick_date = int(mktime(start_time))
+            else:
+                # july 3rd of 2019 - default data start ETHBTC trading on Nicehash | 1577836800  # 01/01/2019
+                start_candlestick_date = 1562112000
+                print('July 03 2019')
+
+            stop_time = input("Enter stop date: ")
+            if stop_time:
+                stop_time = parser.parse(stop_time).timetuple()
+                stop_candlestick_date = int(mktime(stop_time))
+            else:
+                stop_candlestick_date = mktime(
+                    datetime.datetime.now().timetuple())  # today
+                print(datetime.datetime.now(), '- Today (default)')
+
+            resolution_choice = input(
+                "Resolution: minute (1) | hour (2) | day (3):")
+            if resolution_choice == '1':
+                resolution = 1
+                print('minute')
+            elif resolution_choice == '2':
+                print('hour')
+                resolution = 60
+            else:
+                print('day (default)')
+                resolution = 1440  # day by default
+
+            try:  # trying to access buffered data if file already exist
+                market_data = pd.read_pickle(SRC_DATA_FILENAME)
+                print('Loading data from file...')
+            except FileNotFoundError:
+                print('Loading data from Nicehash...')
+                tmp = public_api.get_candlesticks(
+                    current_market_name, start_candlestick_date, stop_candlestick_date, resolution)
+                # print_by_line(tmp)
+                market_data = pd.DataFrame.from_dict(tmp)
+                market_data.to_pickle(SRC_DATA_FILENAME)
+            print(market_data)
+
+            #############################
+            ###   buy low sell high   ###
+            #############################
+            goog_data_signal = pd.DataFrame(index=market_data.index)
+            goog_data_signal['price'] = market_data['close']
+            goog_data_signal['daily_difference'] = goog_data_signal['price'].diff()
+            goog_data_signal['signal'] = 0.0
+            goog_data_signal['signal'][:] = np.where(
+                goog_data_signal['daily_difference'][:] > 0, 1.0, 0.0)
+
+            # total Assets
+            # * 6.5
+            goog_data_signal['positions'] = goog_data_signal['signal'].diff()
+
+            print(goog_data_signal)  # debug
+
+            fig = plt.figure()
+            ax1 = fig.add_subplot(111, ylabel='ETH price in BTC')
+            goog_data_signal['price'].plot(ax=ax1, color='r', lw=2.)
+
+            ax1.plot(goog_data_signal.loc[goog_data_signal.positions == 1.0].index,
+                     goog_data_signal.price[goog_data_signal.positions == 1.0], '^', markersize=5, color='m')
+
+            ax1.plot(goog_data_signal.loc[goog_data_signal.positions == -1.0].index,
+                     goog_data_signal.price[goog_data_signal.positions == -1.0], 'v', markersize=5, color='k')
+            # plt.show()
+
+            # Set the initial capital
+            initial_capital = float(0.20)  # my starting capital in BTC
+
+            positions = pd.DataFrame(index=goog_data_signal.index).fillna(0.0)
+            portfolio = pd.DataFrame(index=goog_data_signal.index).fillna(0.0)
+
+            scale_factor = 10  # adjust graph
+
+            positions['GOOG'] = goog_data_signal['signal']
+            portfolio['positions'] = (positions.multiply(
+                goog_data_signal['price']*scale_factor, axis=0))
+            portfolio['cash'] = initial_capital - (positions.diff().multiply(
+                goog_data_signal['price']*scale_factor, axis=0)).cumsum()
+            portfolio['total'] = portfolio['positions'] + portfolio['cash']
+            portfolio.plot()
+            # plt.show()
+
+            fig = plt.figure()
+            ax1 = fig.add_subplot(111, ylabel='Portfolio value in $')
+            portfolio['total'].plot(ax=ax1, lw=2.)
+            ax1.plot(portfolio.loc[goog_data_signal.positions == 1.0].index,
+                     portfolio.total[goog_data_signal.positions == 1.0], '^', markersize=10, color='m')
+            ax1.plot(portfolio.loc[goog_data_signal.positions == -1.0].index,
+                     portfolio.total[goog_data_signal.positions == -1.0], 'v', markersize=10, color='k')
+            plt.show()
+
         else:
             exit()
 

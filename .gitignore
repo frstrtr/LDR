@@ -133,3 +133,4 @@ keys.py
 .vscode/settings.json
 .pylintrc
 *.csv
+*.pk1

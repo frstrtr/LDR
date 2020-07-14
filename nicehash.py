@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 from time import mktime
 import uuid
 import hmac
@@ -150,7 +150,7 @@ class private_api:
             raise Exception(str(response.status_code) + ": " + response.reason)
 
     def get_epoch_ms_from_now(self):
-        now = datetime.now()
+        now = datetime.datetime.now()
         now_ec_since_epoch = mktime(now.timetuple()) + now.microsecond / 1000000.0
         return int(now_ec_since_epoch * 1000)
 
