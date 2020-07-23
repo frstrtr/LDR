@@ -135,7 +135,8 @@ def on_message(ws, message):
     m_dict = ast.literal_eval(message)
     if m_dict['m'] == 'ob.s':
         # table while we implement windows later
-        print(bc.BOLD+bc.OKGREEN+' Buy'+bc.ENDC+'\t\t\t\t\t\t' +
+        print ()
+        print(bc.BOLD+bc.OKGREEN+'\tBuy'+bc.ENDC+'\t\t\t\t\t' +
               bc.BOLD+bc.WARNING+'Sell'+bc.ENDC)  # header
         
         buy_sell_list = list(zip(reversed(m_dict['b']), reversed(m_dict['s'])))
@@ -179,7 +180,7 @@ def on_open(ws):
     def run(*args):
         # ws.send('{"m":"subscribe.orderbook"}')
         ws.send('{"m":"subscribe.orderbook"}')
-        sleep(100)  # listening for messages for 10 seconds
+        sleep(1000)  # listening for messages for 10 seconds
         ws.send('{"m":"unsubscribe.orderbook"}')
         ws.close()
         print("thread terminating...")
