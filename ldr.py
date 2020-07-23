@@ -27,8 +27,8 @@ current_market_name = 'ETHBTC'
 current_currency_name = 'ETH'
 manual_order_size = None  # Automatical calculation
 
-global manual_order_limit_price  # set manual Limit Price if we set it manually
-manual_order_limit_price = 0
+global MANUAL_ORDER_LIMIT_PRICE  # set manual Limit Price if we set it manually
+MANUAL_ORDER_LIMIT_PRICE = 0
 
 last_fees_paid = 0
 last_trade_profit_loses = 0
@@ -42,8 +42,8 @@ private_api = nicehash.private_api(host, organisation_id, key, secret, False)
 
 def print_by_line(arr):
     n = 0
-    for i in arr:
-        print(n, '::', i)
+    for ix in arr:
+        print(n, '::', ix)
         n += 1
 
 
@@ -132,9 +132,9 @@ def list_my_all_open_orders():  # todo add current trade price to the data raw u
     '''Print all open order on Exchange
     Checks for delisted BSV'''
     # Get my open exchange orders
-    exchange_info = public_api.get_exchange_markets_info()
+    exchange_info_for_open_orders = public_api.get_exchange_markets_info()
     print('My All Open Orders on Exchange:\n')
-    for i in exchange_info['symbols']:
+    for i in exchange_info_for_open_orders['symbols']:
         # print (i['symbol']) # debug
         # if any(x not in i['symbol'] for x in ['BSV', 'LINKUSDT','STORMBTC']):
         # BSV, STORM and LINKUSDT delisted!!!
@@ -171,7 +171,7 @@ def list_my_all_open_orders():  # todo add current trade price to the data raw u
                 else:
                     print(bc.WARNING, end=' ')
                 print('Last trade price ------------------------------------------------------------------------------------------------------------>',
-                      bc.BOLD, "%08.8f" % last_price, last_trade_direction, bc.ENDC)
+                      bc.BOLD, "%08.8f" % last_price, '\t', last_trade_direction, bc.ENDC)
 
 
 def get_latest_shift_advice(direction='buy'):
@@ -537,9 +537,9 @@ if __name__ == "__main__":
                   my_current_currency_balance, current_currency_name)
 
             # profit/loss if You SELL market +/- minimal amount
-            if manual_order_limit_price != 0:
+            if MANUAL_ORDER_LIMIT_PRICE != 0:
                 print('Debug: Manual Limit Price Set!')  # Debug
-                limit_price = manual_order_limit_price
+                limit_price = MANUAL_ORDER_LIMIT_PRICE
 
             print(bc.OKBLUE+'Recommended limit price:\t\t\t',
                   "%08.8f" % round(limit_price, 8), bc.Cyan)
@@ -580,11 +580,11 @@ if __name__ == "__main__":
                   "%08.8f" % round((last_trade_profit_loses + last_fees_paid + trade_amount_est), 8))
 
             print(bc.ENDC)
-            manual_order_limit_price = 0  # reset manual orderlimit price
+            MANUAL_ORDER_LIMIT_PRICE = 0  # reset manual orderlimit price
 
         elif sell_or_buy == '9':  # set manual order limit price
             sell_buy_routine()
-            manual_order_limit_price = float(
+            MANUAL_ORDER_LIMIT_PRICE = float(
                 input('Enter manual order limit price: '))
         elif sell_or_buy == 'c':
 
